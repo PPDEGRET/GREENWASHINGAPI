@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+.venv/
+venv/
+
+# Streamlit
+.streamlit/
+
+# Models & caches
+cache/
+.cache/
+/src/__pycache__/
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Env & secrets
+.env
+.env.*
+*.key
+*.pem
+
+# Node leftovers (if any)
+node_modules/
+
+# Docker
+docker-compose.override.yml
