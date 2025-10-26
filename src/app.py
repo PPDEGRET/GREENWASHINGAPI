@@ -878,6 +878,24 @@ with st.container():
         disabled=not allow_gpt,
     )
 
+if user and not is_premium:
+    st.warning("Free plan: OCR + rule-based score. Upgrade to premium to use GPT Judge.")
+
+allow_gpt = bool(user) and is_premium
+if not allow_gpt:
+    if user:
+        st.sidebar.info("Upgrade to a premium plan to enable the GPT Judge.")
+    else:
+        st.sidebar.info("Log in with a premium account to enable the GPT Judge.")
+
+# Controls
+use_gpt = st.toggle(
+    "Use GPT Judge (experimental)",
+    value=False,
+    help="Adds a second opinion using a GPT model.",
+    disabled=not allow_gpt
+)
+
     st.markdown('</div></div>', unsafe_allow_html=True)
 
 # OCR
@@ -943,25 +961,184 @@ if user:
         gpt_score=gpt_score,
         gpt_reason=gpt_reason,
         combined_score=None,
+        combined_score=None
     )
 else:
     analysis_id = None
 
-render_analysis_results(
-    score=score,
-    level=level,
-    ai_label=ai_label,
-    ai_conf=ai_conf,
-    score_tooltip=score_tooltip,
-    breakdown=breakdown,
-    triggers=triggers,
-    tips=tips,
-    use_gpt=use_gpt,
-    gpt_out=gpt_out,
-    analysis_id=analysis_id,
-    image_bytes=image_bytes,
-    extracted_text=extracted_text,
-    results=results,
-)
+with st.container():
+    st.markdown('<div class="leaf-section">', unsafe_allow_html=True)
+    st.markdown('<div class="leaf-analysis-card">', unsafe_allow_html=True)
+    st.markdown('<h2 class="leaf-section-title">Greenwashing Risk</h2>', unsafe_allow_html=True)
+
+    if use_gpt:
+        lc_col, gpt_col = st.columns(2)
+    else:
+        (lc_col,) = st.columns(1)
+        gpt_col = None
+
+    with lc_col:
+        st.metric("LeafCheck Score", f"{score}", help=score_tooltip)
+        st.caption(f"Level: **{level}** — HF label: {ai_label} ({ai_conf:.1f}% confidence)")
+
+    if use_gpt and gpt_col is not None:
+        gj_score = int(gpt_out.get("risk_score", 0) or 0)
+        gj_level = str(gpt_out.get("level", "Low"))
+        with gpt_col:
+            st.metric("GPT Judge", f"{gj_score}")
+            st.caption(f"Level: **{gj_level}**")
+
+    if breakdown:
+        st.markdown("<h3 class='leaf-section-title' style='font-size:1.1rem;'>Score Breakdown</h3>", unsafe_allow_html=True)
+        nice = {
+            "strong_claims": "Strong claims",
+            "supporting_claims": "Supporting language",
+            "sector_bonus": "Sector context bonus",
+            "evidence_adjustment": "Evidence adjustments",
+            "model_nudge": "Model nudges",
+        }
+        for key, label in nice.items():
+            if key in breakdown and breakdown[key]:
+                st.caption(f"- {label}: {breakdown[key]:+.1f} pts")
+
+    st.markdown("<h3 class='leaf-section-title' style='font-size:1.1rem;'>Triggered Categories</h3>", unsafe_allow_html=True)
+    shown_any = False
+    for k in sorted(triggers.keys()):
+        vals = sorted(set(v for v in triggers.get(k, []) if v))
+        if vals:
+            shown_any = True
+            st.write(f"- **{k}**: {', '.join(vals)}")
+    if not shown_any:
+        st.caption("No rule-based triggers detected.")
+
+    tips = recommend(triggers, extracted_text)
+    if tips:
+        st.markdown("<h3 class='leaf-section-title' style='font-size:1.1rem;'>Recommendations</h3>", unsafe_allow_html=True)
+        for t in tips:
+            st.write(f"- {t}")
+
+    if use_gpt and isinstance(gpt_out, dict):
+        reasons = gpt_out.get("reasons", [])
+        if reasons:
+            st.markdown("<h3 class='leaf-section-title' style='font-size:1.1rem;'>GPT Judge — Rationale</h3>", unsafe_allow_html=True)
+            for r in reasons:
+                st.write(f"- {r}")
+
+    if analysis_id:
+        st.markdown("<h3 class='leaf-section-title' style='font-size:1.1rem;'>Feedback</h3>", unsafe_allow_html=True)
+        feedback_widget(analysis_id)
+
+    st.markdown("<h3 class='leaf-section-title' style='font-size:1.1rem;'>Export Report</h3>", unsafe_allow_html=True)
+    with st.spinner("Preparing PDF..."):
+        pdf_bytes, fname = build_report(
+            image_bytes=image_bytes,
+            extracted_text=extracted_text,
+            results=results,
+        )
+
+    st.download_button(
+        "⬇️ Download PDF Report",
+        data=pdf_bytes,
+        file_name=fname,
+        mime="application/pdf",
+        type="primary",
+        help="Saves the image, risk summary, triggers, recommendations, and OCR text.",
+if use_gpt:
+    lc_col, gpt_col = st.columns(2)
+else:
+    (lc_col,) = st.columns(1)
+    gpt_col = None
+
+with lc_col:
+    st.metric("LeafCheck Score", f"{score}", help=score_tooltip)
+    st.caption(f"Level: **{level}** — HF label: {ai_label} ({ai_conf:.1f}% confidence)")
+
+if use_gpt and gpt_col is not None:
+    gj_score = int(gpt_out.get("risk_score", 0) or 0)
+    gj_level = str(gpt_out.get("level", "Low"))
+    with gpt_col:
+        st.metric("GPT Judge", f"{gj_score}")
+        st.caption(f"Level: **{gj_level}**")
+
+# Breakdown of rule-based contributions
+
+if breakdown:
+    st.write("### 📊 LeafCheck Score Breakdown")
+    nice = {
+        "strong_claims": "Strong claims",
+        "supporting_claims": "Supporting language",
+        "sector_bonus": "Sector context bonus",
+        "evidence_adjustment": "Evidence adjustments",
+        "model_nudge": "Model nudges",
+    }
+    for key, label in nice.items():
+        if key in breakdown and breakdown[key]:
+            st.caption(f"- {label}: {breakdown[key]:+.1f} pts")
+
+# Triggers
+st.write("### 🚨 Triggered Categories")
+shown_any = False
+for k in sorted(triggers.keys()):
+    vals = sorted(set(v for v in triggers.get(k, []) if v))
+    if vals:
+        shown_any = True
+        st.write(f"- **{k}**: {', '.join(vals)}")
+if not shown_any:
+    st.caption("No rule-based triggers detected.")
+
+# Recommendations
+tips = recommend(triggers, extracted_text)
+if tips:
+    st.write("### 💡 Recommendations")
+    for t in tips:
+        st.write(f"- {t}")
+
+# GPT rationale (if any)
+if use_gpt and isinstance(gpt_out, dict):
+    reasons = gpt_out.get("reasons", [])
+    if reasons:
+        st.write("### 🧠 GPT Judge — Rationale")
+        for r in reasons:
+            st.write(f"- {r}")
+
+# Feedback widget (requires analysis_id)
+if analysis_id:
+    st.write("---")
+    st.write("### 🗳️ Feedback")
+    feedback_widget(analysis_id)
+
+# PDF Report
+st.write("---")
+st.write("### 📄 Export Report")
+with st.spinner("Preparing PDF..."):
+    pdf_bytes, fname = build_report(
+        image_bytes=image_bytes,
+        extracted_text=extracted_text,
+        results=results
+    )
+
+    final_level_for_message = gpt_out.get("level") if use_gpt else level
+    lvl = (final_level_for_message or "").lower()
+    if lvl == "high":
+        st.error("High risk — strong or absolute environmental claims without clear scope/evidence.")
+    elif lvl == "medium":
+        st.warning("Medium risk — general or partially supported claims. Add specificity/evidence.")
+    elif lvl == "low":
+        st.success("Low risk — claims appear specific and factual.")
+    else:
+        st.info("Risk level unavailable.")
+
+    st.markdown('</div></div>', unsafe_allow_html=True)
 
 render_footer()
+# Final message
+final_level_for_message = gpt_out.get("level") if use_gpt else level
+lvl = (final_level_for_message or "").lower()
+if lvl == "high":
+    st.error("High risk — strong or absolute environmental claims without clear scope/evidence.")
+elif lvl == "medium":
+    st.warning("Medium risk — general or partially supported claims. Add specificity/evidence.")
+elif lvl == "low":
+    st.success("Low risk — claims appear specific and factual.")
+else:
+    st.info("Risk level unavailable.")
