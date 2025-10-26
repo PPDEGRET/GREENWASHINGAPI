@@ -1,0 +1,19 @@
+{
+  "name": "LeafCheck Codespace",
+  "image": "mcr.microsoft.com/devcontainers/python:3.11",
+  "postCreateCommand": "pip install --upgrade pip && pip install -r requirements.txt",
+  "forwardPorts": [8501],
+  "portsAttributes": {
+    "8501": {
+      "label": "LeafCheck",
+      "onAutoForward": "openBrowser"
+    }
+  },
+  "remoteEnv": {
+    "OPENAI_API_KEY": "${{ secrets.OPENAI_API_KEY }}",
+    "SUPABASE_URL": "${{ secrets.SUPABASE_URL }}",
+    "SUPABASE_ANON_KEY": "${{ secrets.SUPABASE_ANON_KEY }}",
+    "SUPABASE_SERVICE_ROLE": "${{ secrets.SUPABASE_SERVICE_ROLE }}",
+    "APP_BASE_URL": "http://localhost:8501"
+  }
+}
