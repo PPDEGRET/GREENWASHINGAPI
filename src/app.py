@@ -4,7 +4,7 @@ import json
 import streamlit as st
 
 from ocr import extract_text
-from analyzer import analyze_text
+from analyzer import analyze_text, blend_with_llm, DEFAULT_LLM_WEIGHT
 from recommender import recommend
 from report import build_report
 from judge_gpt import judge_with_gpt
@@ -291,15 +291,11 @@ if use_gpt:
 final = None
 final_lvl = None
 if use_gpt and combine_scores:
-    lc = float(score)
-    gj = float(gpt_out.get("risk_score", 0) or 0)
-    final = int(round(0.7 * lc + 0.3 * gj))
-    if final >= 70:
-        final_lvl = "High"
-    elif final >= 40:
-        final_lvl = "Medium"
-    else:
-        final_lvl = "Low"
+    combo = blend_with_llm(results, gpt_out, llm_weight=DEFAULT_LLM_WEIGHT)
+    final = combo["score"]
+    final_lvl = combo["level"]
+else:
+    combo = None
 
 # ---------------------------
 # SAVE to DB (right after results are ready)
@@ -324,7 +320,7 @@ analysis_id = save_analysis(
     triggers=triggers,
     gpt_score=gpt_score,
     gpt_reason=gpt_reason,
-    combined_score=final if (use_gpt and combine_scores) else None
+    combined_score=combo["score"] if combo else None
 )
 
 # ---------------------------
@@ -355,7 +351,30 @@ if use_gpt and gpt_col is not None:
 if use_gpt and combine_scores and final_col is not None:
     with final_col:
         st.metric("Final (Combined)", f"{final}")
-        st.caption(f"Level: **{final_lvl}**")
+        weights = combo.get("weights", {}) if combo else {}
+        rule_w = weights.get("rule")
+        llm_w = weights.get("llm")
+        if rule_w is not None and llm_w is not None:
+            st.caption(
+                f"Level: **{final_lvl}** — blend LeafCheck {rule_w:.0%} / GPT {llm_w:.0%}"
+            )
+        else:
+            st.caption(f"Level: **{final_lvl}**")
+
+# Breakdown of rule-based contributions
+breakdown = results.get("breakdown", {}) or {}
+if breakdown:
+    st.write("### 📊 LeafCheck Score Breakdown")
+    nice = {
+        "strong_claims": "Strong claims",
+        "supporting_claims": "Supporting language",
+        "sector_bonus": "Sector context bonus",
+        "evidence_adjustment": "Evidence adjustments",
+        "model_nudge": "Model nudges",
+    }
+    for key, label in nice.items():
+        if key in breakdown and breakdown[key]:
+            st.caption(f"- {label}: {breakdown[key]:+.1f} pts")
 
 # Triggers
 st.write("### 🚨 Triggered Categories")
@@ -409,7 +428,8 @@ st.download_button(
 )
 
 # Final message
-lvl = (level or "").lower()
+final_level_for_message = final_lvl if (use_gpt and combine_scores and combo) else level
+lvl = (final_level_for_message or "").lower()
 if lvl == "high":
     st.error("High risk — strong or absolute environmental claims without clear scope/evidence.")
 elif lvl == "medium":
