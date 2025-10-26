@@ -7,14 +7,5 @@
 }
 
 body {
-  margin: 0;
   @apply bg-background-light text-dark-grey font-display;
-}
-
-.material-symbols-outlined {
-  font-variation-settings:
-    "FILL" 0,
-    "wght" 400,
-    "GRAD" 0,
-    "opsz" 24;
 }

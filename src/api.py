@@ -6,7 +6,6 @@ from io import BytesIO
 from typing import Any, Dict, Optional
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel
 
@@ -20,14 +19,6 @@ app = FastAPI(
     title="LeafCheck API",
     description="Programmatic access to LeafCheck OCR, analysis, and reporting engines.",
     version="0.1.0",
-)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
 )
 
 
