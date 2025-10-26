@@ -4,12 +4,12 @@ import json
 import streamlit as st
 
 from ocr import extract_text
-from analyzer import analyze_text, blend_with_llm, DEFAULT_LLM_WEIGHT
+from analyzer import analyze_text
 from recommender import recommend
 from report import build_report
 from judge_gpt import judge_with_gpt
 
-from db import supabase_client, supabase_user_client
+from db import APP_BASE_URL, supabase_client, supabase_user_client
 
 # ---------------------------
 # Page config
@@ -23,7 +23,6 @@ st.set_page_config(
 # ---------------------------
 # Auth helpers (place FIRST)
 # ---------------------------
-from db import supabase_client, supabase_user_client, APP_BASE_URL
 
 
 def _format_breakdown_tooltip(breakdown: dict) -> str | None:
@@ -326,32 +325,29 @@ st.sidebar.caption(f"Auth token present: {bool(st.session_state.get('access_toke
 # Auth UI (sidebar)
 auth_block()
 user = current_user()
-ensure_user_profile_initialized()
-if user is None:
-    st.info("Please log in to run analyses.")
-    st.stop()
+if user:
+    ensure_user_profile_initialized()
+    is_premium = user_is_premium(user.id)
+else:
+    is_premium = False
 
-# Premium gating
-is_premium = user_is_premium(user.id)
-if not is_premium:
+if user and not is_premium:
     st.warning("Free plan: OCR + rule-based score. Upgrade to premium to use GPT Judge.")
-allow_gpt = is_premium
+
+allow_gpt = bool(user) and is_premium
+if not allow_gpt:
+    if user:
+        st.sidebar.info("Upgrade to a premium plan to enable the GPT Judge.")
+    else:
+        st.sidebar.info("Log in with a premium account to enable the GPT Judge.")
 
 # Controls
-colA, colB = st.columns([1, 1])
-with colA:
-    use_gpt = st.toggle(
-        "Use GPT Judge (experimental)",
-        value=False if not allow_gpt else False,
-        help="Adds a second opinion using a GPT model.",
-        disabled=not allow_gpt
-    )
-with colB:
-    combine_scores = st.toggle(
-        "Show Combined Score",
-        value=True,
-        help="Display a weighted average of LeafCheck + GPT."
-    )
+use_gpt = st.toggle(
+    "Use GPT Judge (experimental)",
+    value=False,
+    help="Adds a second opinion using a GPT model.",
+    disabled=not allow_gpt
+)
 
 uploaded = st.file_uploader("Upload image", type=["png", "jpg", "jpeg"])
 if not uploaded:
@@ -395,16 +391,6 @@ if use_gpt:
         if not isinstance(gpt_out, dict):
             gpt_out = {"risk_score": 0, "level": "Low", "reasons": ["LLM judge error."], "_error": True}
 
-# Compute combined if needed
-final = None
-final_lvl = None
-if use_gpt and combine_scores:
-    combo = blend_with_llm(results, gpt_out, llm_weight=DEFAULT_LLM_WEIGHT)
-    final = combo["score"]
-    final_lvl = combo["level"]
-else:
-    combo = None
-
 # ---------------------------
 # SAVE to DB (right after results are ready)
 # ---------------------------
@@ -419,31 +405,31 @@ if use_gpt:
     else:
         gpt_reason = json.dumps(reasons)
 
-analysis_id = save_analysis(
-    user_id=user.id,
-    image_name=image_name,
-    ocr_text=extracted_text,
-    leaf_score=score,
-    leaf_level=level,
-    triggers=triggers,
-    gpt_score=gpt_score,
-    gpt_reason=gpt_reason,
-    combined_score=combo["score"] if combo else None
-)
+if user:
+    analysis_id = save_analysis(
+        user_id=user.id,
+        image_name=image_name,
+        ocr_text=extracted_text,
+        leaf_score=score,
+        leaf_level=level,
+        triggers=triggers,
+        gpt_score=gpt_score,
+        gpt_reason=gpt_reason,
+        combined_score=None
+    )
+else:
+    analysis_id = None
 
 # ---------------------------
 # Scores section
 # ---------------------------
 st.subheader("⚖️ Greenwashing Risk")
 
-if use_gpt and combine_scores:
-    lc_col, gpt_col, final_col = st.columns(3)
-elif use_gpt:
+if use_gpt:
     lc_col, gpt_col = st.columns(2)
-    final_col = None
 else:
     (lc_col,) = st.columns(1)
-    gpt_col = final_col = None
+    gpt_col = None
 
 with lc_col:
     st.metric("LeafCheck Score", f"{score}", help=score_tooltip)
@@ -455,19 +441,6 @@ if use_gpt and gpt_col is not None:
     with gpt_col:
         st.metric("GPT Judge", f"{gj_score}")
         st.caption(f"Level: **{gj_level}**")
-
-if use_gpt and combine_scores and final_col is not None:
-    with final_col:
-        st.metric("Final (Combined)", f"{final}")
-        weights = combo.get("weights", {}) if combo else {}
-        rule_w = weights.get("rule")
-        llm_w = weights.get("llm")
-        if rule_w is not None and llm_w is not None:
-            st.caption(
-                f"Level: **{final_lvl}** — blend LeafCheck {rule_w:.0%} / GPT {llm_w:.0%}"
-            )
-        else:
-            st.caption(f"Level: **{final_lvl}**")
 
 # Breakdown of rule-based contributions
 
@@ -536,7 +509,7 @@ st.download_button(
 )
 
 # Final message
-final_level_for_message = final_lvl if (use_gpt and combine_scores and combo) else level
+final_level_for_message = gpt_out.get("level") if use_gpt else level
 lvl = (final_level_for_message or "").lower()
 if lvl == "high":
     st.error("High risk — strong or absolute environmental claims without clear scope/evidence.")

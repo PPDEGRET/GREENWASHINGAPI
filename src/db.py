@@ -1,40 +1,39 @@
 # src/db.py
-import os
-from supabase import create_client, Client
+from __future__ import annotations
 
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY")
-SUPABASE_SERVICE_ROLE = os.getenv("SUPABASE_SERVICE_ROLE")
-APP_BASE_URL = os.getenv("APP_BASE_URL", "http://localhost:8501")
+from supabase import Client, create_client
 
-def _assert_env():
-    missing = []
-    if not SUPABASE_URL:
-        missing.append("SUPABASE_URL")
-    if not SUPABASE_ANON_KEY:
-        missing.append("SUPABASE_ANON_KEY")
-    if missing:
-        raise RuntimeError(f"Missing env vars: {', '.join(missing)}")
+from config import MissingEnvironmentVariable, get_settings
+
+
+def _base_client() -> Client:
+    settings = get_settings()
+    return create_client(settings.supabase_url, settings.supabase_anon_key)
+
 
 def supabase_client() -> Client:
-    """Non-authed client (anon key). Use only for public tables or admin ops with service role."""
-    _assert_env()
-    return create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
+    """Non-authed client (anon key). Use only for public tables."""
+
+    return _base_client()
+
 
 def supabase_admin() -> Client:
     """Service-role client (server-only). Avoid using unless doing admin tasks."""
-    _assert_env()
-    if not SUPABASE_SERVICE_ROLE:
-        raise RuntimeError("SUPABASE_SERVICE_ROLE is required for admin client")
-    return create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE)
+
+    settings = get_settings()
+    service_role = settings.supabase_service_role
+    if not service_role:
+        raise MissingEnvironmentVariable("SUPABASE_SERVICE_ROLE")
+    return create_client(settings.supabase_url, service_role)
+
 
 def supabase_user_client(access_token: str | None) -> Client:
     """
     Client that carries the user's JWT so RLS sees auth.uid().
     Use this for all reads/writes on RLS-protected tables.
     """
-    _assert_env()
-    client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+    client = _base_client()
     if access_token:
         # Attach the token to both PostgREST and Auth subclients
         try:
@@ -46,3 +45,20 @@ def supabase_user_client(access_token: str | None) -> Client:
         except Exception:
             pass
     return client
+
+
+def get_app_base_url() -> str:
+    """Return the base URL where the Streamlit app is exposed."""
+
+    return get_settings().app_base_url
+
+
+APP_BASE_URL = get_app_base_url()
+
+__all__ = [
+    "APP_BASE_URL",
+    "get_app_base_url",
+    "supabase_admin",
+    "supabase_client",
+    "supabase_user_client",
+]

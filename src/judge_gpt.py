@@ -1,14 +1,15 @@
 # src/judge_gpt.py
 from __future__ import annotations
-import os
 import json
-from typing import Dict, Any
+from typing import Any, Dict
 
 # OpenAI SDK v1
 try:
     from openai import OpenAI
 except Exception:  # pragma: no cover
     OpenAI = None  # handled at runtime
+
+from config import MissingEnvironmentVariable, get_settings
 
 
 SYSTEM_PROMPT = """You are a careful EU green-claims reviewer.
@@ -36,13 +37,15 @@ Instructions:
 3) Output strict JSON with keys: risk_score, level, reasons.
 """
 
+
 def _client() -> OpenAI:
     if OpenAI is None:
         raise RuntimeError("OpenAI SDK not installed. Add `openai` to requirements.txt and rebuild the image.")
-    api_key = os.getenv("OPENAI_API_KEY", "").strip()
+    api_key = get_settings().openai_api_key
     if not api_key:
-        raise RuntimeError("Missing OPENAI_API_KEY environment variable.")
+        raise MissingEnvironmentVariable("OPENAI_API_KEY")
     return OpenAI(api_key=api_key)
+
 
 def judge_with_gpt(ad_text: str, model: str = "gpt-4o-mini") -> Dict[str, Any]:
     """
