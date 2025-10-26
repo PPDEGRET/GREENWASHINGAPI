@@ -1,7 +1,6 @@
 # src/analyzer.py
 from __future__ import annotations
 from typing import Any, Dict, List, Optional
-import math
 import re
 import streamlit as st
 from transformers import pipeline
@@ -405,11 +404,6 @@ BETA = {
     "citation": 0.25,
 }
 
-EVIDENCE_LAMBDA = 0.8
-USE_LOGISTIC = False
-LOGISTIC_GAMMA = 6.0
-LOGISTIC_DELTA = -2.0
-
 # Specificity helpers
 PERCENT_REDUCTION_RX = re.compile(r"\b\d{1,3}\s?%(\s*(reduction|lower|cut|moins))?\b", re.I)
 BASELINE_YEAR_RX = re.compile(r"\b(baseline|from)\s*(19|20)\d{2}\b", re.I)
@@ -638,7 +632,10 @@ def leafcheck_score(features: Dict[str, float]) -> Dict[str, Any]:
         "llm_greenwash": ALPHA["llm_greenwash"] * f_llm,
     }
 
-    R_raw = noisy_or(list(risk_terms.values()))
+    risk_values = list(risk_terms.values())
+    R_raw = noisy_or(risk_values)
+    risk_strength = clamp01(sum(risk_values) / max(1, len(risk_values)))
+    max_risk = clamp01(max(risk_values) if risk_values else 0.0)
 
     evidence_terms = {
         "third_party": BETA["third_party"] * e_third,
@@ -650,20 +647,23 @@ def leafcheck_score(features: Dict[str, float]) -> Dict[str, Any]:
     }
 
     E = sum(evidence_terms.values())
-    R_damped = R_raw / (1.0 + EVIDENCE_LAMBDA * E)
+    evidence_values = list(evidence_terms.values())
+    evidence_strength = clamp01(sum(evidence_values) / max(1, len(evidence_values)))
 
-    if USE_LOGISTIC:
-        score_value = 1.0 / (1.0 + math.exp(-(LOGISTIC_GAMMA * R_damped + LOGISTIC_DELTA)))
-    else:
-        score_value = clamp01(R_damped)
+    contextual_risk = clamp01(0.65 * R_raw + 0.25 * risk_strength + 0.10 * max_risk)
+    mitigation = clamp01(0.5 * evidence_strength)
+
+    adjusted = clamp01(contextual_risk * (1.0 - mitigation))
+    support_gap = clamp01(R_raw - mitigation)
+    score_value = clamp01(0.7 * adjusted + 0.3 * support_gap)
 
     score = 100.0 * score_value
 
     if f_carbon == 1.0 and E < 0.5:
-        score = max(score, 70.0)
+        score = max(score, 72.0)
 
-    if R_raw > 0.6 and E >= 1.5:
-        score = min(score, 69.0)
+    if R_raw > 0.65 and E >= 1.8:
+        score = min(score, 68.0)
 
     score = max(0.0, min(100.0, score))
 
@@ -676,15 +676,20 @@ def leafcheck_score(features: Dict[str, float]) -> Dict[str, Any]:
 
     n_risk_flags = sum(1 for value in risk_terms.values() if value > 0.0)
     n_evidence_flags = sum(1 for value in evidence_terms.values() if value > 0.0)
-    conf = clamp01((n_risk_flags + n_evidence_flags) / 8.0)
+    signal = clamp01(0.55 * risk_strength + 0.25 * max_risk + 0.20 * (1.0 - mitigation))
+    conf = clamp01((n_risk_flags + n_evidence_flags) / 10.0 + 0.4 * signal)
     uncertainty = round(10.0 * (1.0 - conf), 2)
 
     breakdown = {
         "risk_terms": risk_terms,
         "evidence_terms": evidence_terms,
         "R_raw": R_raw,
-        "E": E,
-        "R_damped": R_damped,
+        "risk_strength": risk_strength,
+        "max_risk": max_risk,
+        "evidence_sum": E,
+        "evidence_strength": evidence_strength,
+        "contextual_risk": contextual_risk,
+        "mitigation": mitigation,
     }
 
     return {
@@ -710,8 +715,12 @@ def analyze_text(text: str) -> Dict[str, object]:
                 "risk_terms": {},
                 "evidence_terms": {},
                 "R_raw": 0.0,
-                "E": 0.0,
-                "R_damped": 0.0,
+                "risk_strength": 0.0,
+                "max_risk": 0.0,
+                "evidence_sum": 0.0,
+                "evidence_strength": 0.0,
+                "contextual_risk": 0.0,
+                "mitigation": 0.0,
             },
             "uncertainty": 10.0,
         }
