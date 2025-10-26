@@ -25,6 +25,70 @@ st.set_page_config(
 # ---------------------------
 from db import supabase_client, supabase_user_client, APP_BASE_URL
 
+
+def _format_breakdown_tooltip(breakdown: dict) -> str | None:
+    """Create a readable tooltip describing how the LeafCheck score was built."""
+
+    if not isinstance(breakdown, dict):
+        return None
+
+    risk_terms = breakdown.get("risk_terms") or {}
+    evidence_terms = breakdown.get("evidence_terms") or {}
+    r_raw = breakdown.get("R_raw")
+    e_total = breakdown.get("E")
+    r_damped = breakdown.get("R_damped")
+
+    risk_labels = {
+        "carbon_neutral": "Carbon-neutral claims",
+        "offsets": "Offsets volume",
+        "lifecycle_offset": "Lifecycle offset claims",
+        "absolutes": "Absolute statements",
+        "superlatives": "Superlatives & hype",
+        "vague": "Vague language",
+        "packaging_only": "Packaging-only claim",
+        "sector_interaction": "Sector risk interaction",
+        "offset_reliance": "Offset reliance",
+        "llm_greenwash": "LLM greenwashing signal",
+    }
+
+    evidence_labels = {
+        "third_party": "Third-party assurance",
+        "lca_epd": "LCA / EPD evidence",
+        "standards": "Standards cited",
+        "scope": "Scopes disclosed",
+        "specificity": "Specificity (%, baseline, target)",
+        "citation": "External citations",
+    }
+
+    def _format_section(title: str, entries: dict, labels: dict) -> list[str]:
+        lines: list[str] = []
+        if not entries:
+            return lines
+        filtered = {k: float(v) for k, v in entries.items() if abs(float(v)) > 1e-3}
+        if not filtered:
+            return lines
+        lines.append(title)
+        for key, value in sorted(filtered.items(), key=lambda item: -abs(item[1])):
+            label = labels.get(key, key.replace("_", " ").title())
+            lines.append(f"• {label}: {value:+.2f}")
+        return lines
+
+    tooltip_lines: list[str] = []
+    tooltip_lines.extend(_format_section("Risk factors:", risk_terms, risk_labels))
+    tooltip_lines.extend(_format_section("Evidence dampers:", evidence_terms, evidence_labels))
+
+    aggregate_bits = []
+    if isinstance(r_raw, (int, float)):
+        aggregate_bits.append(f"R_raw={float(r_raw):.2f}")
+    if isinstance(e_total, (int, float)):
+        aggregate_bits.append(f"Evidence sum={float(e_total):.2f}")
+    if isinstance(r_damped, (int, float)):
+        aggregate_bits.append(f"R_damped={float(r_damped):.2f}")
+    if aggregate_bits:
+        tooltip_lines.append("Aggregates: " + ", ".join(aggregate_bits))
+
+    return "\n".join(tooltip_lines) if tooltip_lines else None
+
 def auth_block():
     """
     Sidebar auth with Login / Sign up / Forgot Password (logged-out)
@@ -278,6 +342,8 @@ try:
 except Exception:
     ai_conf = 0.0
 triggers = results.get("triggers", {}) or {}
+breakdown = results.get("breakdown", {}) or {}
+score_tooltip = _format_breakdown_tooltip(breakdown)
 
 # Optional GPT judge
 gpt_out = {}
@@ -338,7 +404,7 @@ else:
     gpt_col = final_col = None
 
 with lc_col:
-    st.metric("LeafCheck Score", f"{score}")
+    st.metric("LeafCheck Score", f"{score}", help=score_tooltip)
     st.caption(f"Level: **{level}** — HF label: {ai_label} ({ai_conf:.1f}% confidence)")
 
 if use_gpt and gpt_col is not None:
@@ -362,7 +428,7 @@ if use_gpt and combine_scores and final_col is not None:
             st.caption(f"Level: **{final_lvl}**")
 
 # Breakdown of rule-based contributions
-breakdown = results.get("breakdown", {}) or {}
+
 if breakdown:
     st.write("### 📊 LeafCheck Score Breakdown")
     nice = {
