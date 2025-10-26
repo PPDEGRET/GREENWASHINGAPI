@@ -428,6 +428,7 @@ if use_gpt and combine_scores and final_col is not None:
             st.caption(f"Level: **{final_lvl}**")
 
 # Breakdown of rule-based contributions
+
 if breakdown:
     st.write("### 📊 LeafCheck Score Breakdown")
     nice = {
