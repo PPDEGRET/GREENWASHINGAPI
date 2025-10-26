@@ -201,6 +201,32 @@ def auth_block():
 def current_user():
     return st.session_state.get("user")
 
+
+def ensure_user_profile_initialized():
+    """Create or refresh the app_users profile row for the logged-in user."""
+
+    user = current_user()
+    if not user or st.session_state.get("_profile_ready"):
+        return
+
+    access_token = st.session_state.get("access_token")
+    sb = supabase_user_client(access_token)
+    payload = {
+        "user_id": user.id,
+        "email": getattr(user, "email", None),
+    }
+
+    try:
+        sb.table("app_users").upsert(payload, on_conflict="user_id").execute()
+        st.session_state["_profile_ready"] = True
+    except Exception as exc:
+        message = str(exc).lower()
+        if "duplicate" in message or "conflict" in message:
+            st.session_state["_profile_ready"] = True
+        else:
+            # Leave the flag unset so we can retry later, but avoid surfacing noisy errors.
+            st.session_state["_profile_ready"] = False
+
 def user_is_premium(user_id: str) -> bool:
     access_token = st.session_state.get("access_token")
     sb = supabase_user_client(access_token)
@@ -241,12 +267,27 @@ def save_analysis(user_id, image_name, ocr_text, leaf_score, leaf_level, trigger
         "gpt_reason": gpt_reason,
         "combined_score": int(combined_score) if combined_score is not None else None,
     }
-    try:
+    def _attempt_insert():
         res = sb.table("analyses").insert(row).execute()
         inserted = (res.data or [])
         return inserted[0]["id"] if inserted and "id" in inserted[0] else None
-    except Exception as e:
-        st.warning(f"Could not save analysis (db error): {e}")
+
+    try:
+        return _attempt_insert()
+    except Exception as exc:
+        message = str(exc)
+        if "403" in message:
+            # First-time users may not yet have their profile row for RLS policies. Try to create it.
+            ensure_user_profile_initialized()
+            try:
+                return _attempt_insert()
+            except Exception as retry_exc:
+                message = str(retry_exc)
+        st.warning(
+            "Could not save this analysis to Supabase yet. We saved the results locally; "
+            "please try again later."
+        )
+        st.caption(f"Supabase error detail: {message}")
         return None
 
 def feedback_widget(analysis_id: str):
@@ -285,6 +326,7 @@ st.sidebar.caption(f"Auth token present: {bool(st.session_state.get('access_toke
 # Auth UI (sidebar)
 auth_block()
 user = current_user()
+ensure_user_profile_initialized()
 if user is None:
     st.info("Please log in to run analyses.")
     st.stop()
