@@ -2,10 +2,22 @@
   "name": "LeafCheck Codespace",
   "image": "mcr.microsoft.com/devcontainers/python:3.11",
   "postCreateCommand": "pip install --upgrade pip && pip install -r requirements.txt",
-  "forwardPorts": [8501],
+  "forwardPorts": [
+    3000,
+    8080,
+    8501
+  ],
   "portsAttributes": {
     "8501": {
       "label": "LeafCheck",
+      "onAutoForward": "openBrowser"
+    },
+    "8080": {
+      "label": "LeafCheck API",
+      "onAutoForward": "notify"
+    },
+    "3000": {
+      "label": "LeafCheck Web",
       "onAutoForward": "openBrowser"
     }
   },
