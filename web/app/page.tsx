@@ -9,10 +9,10 @@ const navLinks = [
 
 export default function LandingPage() {
   return (
-    <div className="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden bg-background-light text-dark-grey">
-      <div className="layout-container flex h-full grow flex-col">
-        <div className="layout-content-container flex flex-1 justify-center px-4 py-5 md:px-10 lg:px-20 xl:px-40">
-          <div className="flex w-full max-w-[960px] flex-1 flex-col">
+    <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden bg-background-light text-dark-grey">
+      <div className="flex grow flex-col">
+        <div className="flex flex-1 justify-center px-4 py-5 md:px-10 lg:px-20 xl:px-40">
+          <div className="flex max-w-[960px] flex-1 flex-col">
             <header className="flex items-center justify-between whitespace-nowrap border-b border-neutral-grey/30 px-4 py-3 sm:px-6 lg:px-10">
               <div className="flex items-center gap-4 text-dark-grey">
                 <div className="size-6 text-primary">
@@ -32,59 +32,54 @@ export default function LandingPage() {
                 <h2 className="text-xl font-bold leading-tight tracking-[-0.015em]">LeafCheck</h2>
               </div>
               <div className="hidden flex-1 justify-end gap-8 md:flex">
-                <nav className="flex items-center gap-9 text-sm font-medium leading-normal text-dark-grey">
+                <div className="flex items-center gap-9">
                   {navLinks.map((item) => (
-                    <Link key={item.label} href={item.href} className="transition-colors hover:text-brand-deep">
+                    <Link
+                      key={item.label}
+                      href={item.href}
+                      className="text-sm font-medium leading-normal text-dark-grey"
+                    >
                       {item.label}
                     </Link>
                   ))}
-                </nav>
+                </div>
                 <div className="flex gap-2">
-                  <button className="flex h-10 min-w-[84px] max-w-[480px] items-center justify-center rounded-lg bg-primary/20 px-4 text-sm font-bold text-dark-grey transition-colors hover:bg-primary/30">
-                    <span className="truncate">Login</span>
-                  </button>
+                  <Button variant="secondary">Login</Button>
                   <Button>Sign Up</Button>
                 </div>
               </div>
               <div className="md:hidden">
-                <button className="text-dark-grey" aria-label="Open navigation">
+                <button className="text-dark-grey">
                   <span className="material-symbols-outlined">menu</span>
                 </button>
               </div>
             </header>
-
             <main className="flex flex-col gap-10 py-10 md:gap-16 md:py-16">
-              <section className="flex flex-col items-center gap-6 px-4 text-center">
+              <div className="flex flex-col items-center gap-6 px-4 text-center">
                 <h1 className="text-4xl font-black leading-tight tracking-[-0.033em] text-dark-grey md:text-5xl">
                   Upload an ad — get a greenwashing risk analysis.
                 </h1>
                 <p className="max-w-2xl text-base font-normal leading-normal text-dark-grey md:text-lg">
                   Our AI analyzes your marketing materials to identify potential greenwashing risks and provides a detailed report.
                 </p>
-                <div className="flex flex-wrap items-center justify-center gap-3">
-                  <Button>Get Started</Button>
-                  <Button variant="secondary">View Dashboard</Button>
-                </div>
-              </section>
-
-              <section className="px-4">
-                <div className="flex flex-col items-center gap-6 rounded-xl border-2 border-dashed border-neutral-grey/50 px-6 py-14 text-center">
+              </div>
+              <div className="flex flex-col p-4">
+                <div className="flex flex-col items-center gap-6 rounded-xl border-2 border-dashed border-neutral-grey/50 px-6 py-14">
                   <span className="material-symbols-outlined text-5xl text-primary">upload_file</span>
                   <div className="flex max-w-[480px] flex-col items-center gap-2">
-                    <p className="text-lg font-bold leading-tight tracking-[-0.015em] text-dark-grey">
-                      Drag &amp; drop a file here or browse your files.
+                    <p className="max-w-[480px] text-center text-lg font-bold leading-tight tracking-[-0.015em] text-dark-grey">
+                      Drag & drop a file here or browse your files.
                     </p>
-                    <p className="text-sm font-normal leading-normal text-neutral-grey">
+                    <p className="max-w-[480px] text-center text-sm font-normal leading-normal text-neutral-grey">
                       Our AI will analyze your ad for greenwashing.
                     </p>
                   </div>
                   <Button>Browse Files</Button>
                 </div>
-              </section>
-
-              <section className="flex flex-col gap-10 px-4 py-10 @container">
+              </div>
+              <div className="flex flex-col gap-10 px-4 py-10 @container">
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-                  <article className="flex flex-col gap-4 rounded-xl border border-neutral-grey/30 bg-background-light p-6 text-left">
+                  <div className="flex flex-1 flex-col items-start gap-4 rounded-xl border border-neutral-grey/30 bg-background-light p-6 text-left">
                     <div className="text-primary">
                       <span className="material-symbols-outlined text-3xl">assessment</span>
                     </div>
@@ -94,8 +89,8 @@ export default function LandingPage() {
                         Get a clear and concise risk score for your ad, with a detailed breakdown of the factors that influenced the score.
                       </p>
                     </div>
-                  </article>
-                  <article className="flex flex-col gap-4 rounded-xl border border-neutral-grey/30 bg-background-light p-6 text-left">
+                  </div>
+                  <div className="flex flex-1 flex-col items-start gap-4 rounded-xl border border-neutral-grey/30 bg-background-light p-6 text-left">
                     <div className="text-primary">
                       <span className="material-symbols-outlined text-3xl">auto_awesome</span>
                     </div>
@@ -105,8 +100,8 @@ export default function LandingPage() {
                         Our advanced AI analyzes your ad&apos;s text and imagery to provide you with actionable insights and recommendations.
                       </p>
                     </div>
-                  </article>
-                  <article className="flex flex-col gap-4 rounded-xl border border-neutral-grey/30 bg-background-light p-6 text-left">
+                  </div>
+                  <div className="flex flex-1 flex-col items-start gap-4 rounded-xl border border-neutral-grey/30 bg-background-light p-6 text-left">
                     <div className="text-primary">
                       <span className="material-symbols-outlined text-3xl">workspace_premium</span>
                     </div>
@@ -116,24 +111,23 @@ export default function LandingPage() {
                         Unlock advanced features like detailed reports, historical analysis, and competitive benchmarking.
                       </p>
                     </div>
-                  </article>
+                  </div>
                 </div>
-              </section>
+              </div>
             </main>
-
-            <footer className="border-t border-neutral-grey/30 py-8 px-4 md:px-10">
+            <footer className="border-t border-neutral-grey/30 px-4 py-8 md:px-10">
               <div className="flex flex-col items-center justify-between gap-6 md:flex-row">
                 <div className="text-sm text-neutral-grey">© 2024 LeafCheck. All rights reserved.</div>
                 <div className="flex items-center gap-6">
-                  <Link className="text-sm text-neutral-grey transition-colors hover:text-dark-grey" href="#">
+                  <Link className="text-sm text-neutral-grey hover:text-dark-grey" href="#">
                     Terms of Service
                   </Link>
-                  <Link className="text-sm text-neutral-grey transition-colors hover:text-dark-grey" href="#">
+                  <Link className="text-sm text-neutral-grey hover:text-dark-grey" href="#">
                     Privacy Policy
                   </Link>
                 </div>
                 <div className="flex gap-4 text-neutral-grey">
-                  <Link className="transition-colors hover:text-dark-grey" href="#" aria-label="Twitter">
+                  <Link className="hover:text-dark-grey" href="#" aria-label="Twitter">
                     <svg
                       className="feather feather-twitter"
                       fill="none"
@@ -149,7 +143,7 @@ export default function LandingPage() {
                       <path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"></path>
                     </svg>
                   </Link>
-                  <Link className="transition-colors hover:text-dark-grey" href="#" aria-label="LinkedIn">
+                  <Link className="hover:text-dark-grey" href="#" aria-label="LinkedIn">
                     <svg
                       className="feather feather-linkedin"
                       fill="none"
@@ -167,7 +161,7 @@ export default function LandingPage() {
                       <circle cx="4" cy="4" r="2"></circle>
                     </svg>
                   </Link>
-                  <Link className="transition-colors hover:text-dark-grey" href="#" aria-label="Facebook">
+                  <Link className="hover:text-dark-grey" href="#" aria-label="Facebook">
                     <svg
                       className="feather feather-facebook"
                       fill="none"

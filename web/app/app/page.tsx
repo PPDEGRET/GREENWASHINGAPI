@@ -5,12 +5,6 @@ import Button from "@/components/Button";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080";
 
-const humanize = (value: string | null | undefined) =>
-  (value ?? "")
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (match) => match.toUpperCase())
-    .trim();
-
 type AnalyzeResponse = {
   risk_level: string;
   score: number;
@@ -100,10 +94,7 @@ export default function AppDashboard() {
         raw?: Record<string, unknown>;
       };
 
-      setAnalysis({
-        ...analysisData,
-        risk_level: humanize(analysisData.risk_level)
-      });
+      setAnalysis(analysisData);
       setAnalysisPayload(analysisData.raw ?? analysisData);
       setStatus("Analysis complete.");
     } catch (err) {
@@ -257,7 +248,7 @@ export default function AppDashboard() {
                 <ul className="mt-3 space-y-2 text-sm text-dark-grey">
                   {Object.entries(analysis.triggers || {}).map(([category, values]) => (
                     <li key={category} className="rounded-md bg-primary/10 px-3 py-2">
-                      <span className="font-medium capitalize">{humanize(category)}</span>
+                      <span className="font-medium capitalize">{category.replace(/_/g, " ")}</span>
                       <span className="ml-1 text-neutral-grey">({values.length})</span>
                       <div className="mt-1 text-xs text-dark-grey/80">
                         {values.join(", ") || "—"}

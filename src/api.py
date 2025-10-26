@@ -6,7 +6,6 @@ from io import BytesIO
 from typing import Any, Dict, Optional
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel
 
@@ -20,21 +19,6 @@ app = FastAPI(
     title="LeafCheck API",
     description="Programmatic access to LeafCheck OCR, analysis, and reporting engines.",
     version="0.1.0",
-)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://localhost:3001",
-        "http://127.0.0.1:3001",
-        "http://0.0.0.0:3000",
-    ],
-    allow_origin_regex=r"https?://localhost(:\\d+)?$",
-    allow_credentials=False,
-    allow_methods=["*"],
-    allow_headers=["*"],
 )
 
 
@@ -63,10 +47,7 @@ async def run_ocr(image: UploadFile = File(...)) -> Dict[str, Any]:
     if getattr(ocr_module, "RapidOCR", None) is None:
         raise HTTPException(
             status_code=503,
-            detail=(
-                "OCR backend unavailable: install rapidocr-onnxruntime to enable OCR. "
-                "Text can still be analyzed by pasting it manually."
-            ),
+            detail="OCR backend unavailable: install rapidocr-onnxruntime to enable OCR.",
         )
 
     payload = await image.read()
