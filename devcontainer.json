@@ -9,6 +9,13 @@
       "onAutoForward": "openBrowser"
     }
   },
+  "containerEnv": {
+    "OPENAI_API_KEY": "${{ secrets.OPENAI_API_KEY }}",
+    "SUPABASE_URL": "${{ secrets.SUPABASE_URL }}",
+    "SUPABASE_ANON_KEY": "${{ secrets.SUPABASE_ANON_KEY }}",
+    "SUPABASE_SERVICE_ROLE": "${{ secrets.SUPABASE_SERVICE_ROLE }}",
+    "APP_BASE_URL": "http://localhost:8501"
+  },
   "remoteEnv": {
     "OPENAI_API_KEY": "${{ secrets.OPENAI_API_KEY }}",
     "SUPABASE_URL": "${{ secrets.SUPABASE_URL }}",

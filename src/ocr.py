@@ -6,16 +6,14 @@ import cv2
 import numpy as np
 from PIL import Image
 
-import easyocr
 import streamlit as st
-
-LANGUAGES = ["en", "fr", "de", "nl", "da", "it", "es"]
+from rapidocr_onnxruntime import RapidOCR
 
 
 @st.cache_resource(show_spinner=False)
 def _cached_reader():
-    """Load EasyOCR once per process for the supported languages."""
-    return easyocr.Reader(LANGUAGES, gpu=False)
+    """Instantiate RapidOCR once per process."""
+    return RapidOCR()
 
 
 def _preprocess_for_ocr(image: Image.Image) -> np.ndarray:
@@ -57,28 +55,35 @@ def _preprocess_for_ocr(image: Image.Image) -> np.ndarray:
     return cv2.cvtColor(adaptive, cv2.COLOR_GRAY2RGB)
 
 
-def _should_retry(results: List) -> bool:
+def _collect_text(results: List) -> str:
     if not results:
-        return True
-    confidences = [entry[2] for entry in results if len(entry) > 2 and entry[2] is not None]
-    if not confidences:
-        return True
-    avg_conf = sum(confidences) / len(confidences)
-    return avg_conf < 0.35
+        return ""
+    phrases = []
+    for entry in results:
+        if not entry or len(entry) < 2:
+            continue
+        text = entry[1]
+        score = entry[2] if len(entry) > 2 else None
+        if text and (score is None or score >= 0.3):
+            phrases.append(text)
+    return " ".join(phrases).strip()
 
 def extract_text(image_bytes: bytes) -> str:
     """
-    Extracts text from an image (bytes) using EasyOCR.
+    Extract text from an image using RapidOCR with preprocessing fallbacks.
     Ensures PIL.Image -> numpy.ndarray conversion for robustness.
     """
     if not image_bytes:
         return ""
     reader = _cached_reader()
     image = Image.open(io.BytesIO(image_bytes))
+    rgb = np.array(image.convert("RGB"))
+
+    results, _ = reader(rgb)
+    text = _collect_text(results)
+    if text:
+        return text
+
     preprocessed = _preprocess_for_ocr(image)
-    results: List = reader.readtext(preprocessed, paragraph=False, detail=1)
-    if _should_retry(results):
-        arr = np.array(image.convert("RGB"))
-        results = reader.readtext(arr, paragraph=False, detail=1)
-    text = " ".join([entry[1] for entry in results if len(entry) > 1 and entry[1]])
-    return text.strip()
+    results, _ = reader(preprocessed)
+    return _collect_text(results)
