@@ -1,3 +1,10 @@
+## Monorepo development
+
+Run the backend and frontend in separate terminals:
+
+- Terminal 1: `uvicorn src.api:app --reload --port 8080`
+- Terminal 2: `cd web && npm install && npm run dev`
+
 # LeafCheck — Ad Screenshot Analyzer
 
 Run locally:
