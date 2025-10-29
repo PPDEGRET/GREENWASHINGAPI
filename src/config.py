@@ -6,6 +6,18 @@ from dataclasses import dataclass
 from functools import lru_cache
 
 
+def _load_dotenv() -> None:
+    """Best-effort loading of a local .env file."""
+
+    try:
+        from dotenv import load_dotenv
+    except Exception:  # pragma: no cover - fallback if optional dep missing
+        load_dotenv = None
+
+    if callable(load_dotenv):
+        load_dotenv()
+
+
 class MissingEnvironmentVariable(RuntimeError):
     """Raised when a required environment variable is absent or empty."""
 
@@ -50,6 +62,7 @@ def _get_optional_env(name: str, default: str | None = None) -> str | None:
 def get_settings() -> Settings:
     """Load application settings from the environment (cached)."""
 
+    _load_dotenv()
     return Settings(
         supabase_url=_get_required_env("SUPABASE_URL"),
         supabase_anon_key=_get_required_env("SUPABASE_ANON_KEY"),
