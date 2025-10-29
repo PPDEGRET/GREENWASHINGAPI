@@ -80,6 +80,13 @@ def judge_with_gpt(ad_text: str, model: str = "gpt-4o-mini") -> Dict[str, Any]:
             reasons = [reasons]
         reasons = [str(r) for r in reasons if r]
         return {"risk_score": score, "level": level, "reasons": reasons}
+    except MissingEnvironmentVariable:
+        return {
+            "risk_score": 0,
+            "level": "Low",
+            "reasons": ["LLM judge skipped: missing OPENAI_API_KEY."],
+            "_error": True,
+        }
     except Exception as e:
         # Graceful fallback
         return {
