@@ -2,6 +2,10 @@
 
 import json
 import streamlit as st
+from dotenv import load_dotenv
+
+# Load local .env so SUPABASE_URL, OPENAI_API_KEY, etc. are available
+load_dotenv()
 
 from ocr import extract_text
 from report import build_report
@@ -729,9 +733,9 @@ def render_analysis_results(
             st.markdown("<div class='leaf-reasons'>", unsafe_allow_html=True)
             for reason in reasons:
                 st.markdown(
-                    """
+                    f"""
                     <div class='leaf-reason-item'>
-                        <span class='material-symbols-outlined' style='font-size:1.2rem; color:#5ea476;'>task_alt</span>
+                        <span style='font-size:1.2rem; color:#5ea476;'>✅</span>
                         <span>{reason}</span>
                     </div>
                     """,

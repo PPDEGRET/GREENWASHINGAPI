@@ -62,19 +62,59 @@ def _preprocess_for_ocr(image: Image.Image) -> np.ndarray:
 
     return cv2.cvtColor(adaptive, cv2.COLOR_GRAY2RGB)
 
+# --- add this helper near the top of the file (or above _collect_text) ---
+def _to_float_or_none(x):
+    if x is None:
+        return None
+    try:
+        # Some OCR libs return strings like "0.87" or even "87%"
+        s = str(x).strip().replace("%", "")
+        return float(s) if s != "" else None
+    except (ValueError, TypeError):
+        return None
 
-def _collect_text(results: List) -> str:
-    if not results:
-        return ""
-    phrases = []
-    for entry in results:
-        if not entry or len(entry) < 2:
-            continue
-        text = entry[1]
-        score = entry[2] if len(entry) > 2 else None
-        if text and (score is None or score >= 0.3):
-            phrases.append(text)
-    return " ".join(phrases).strip()
+# --- replace your existing _collect_text with this version ---
+def _collect_text(results, min_conf=0.30):
+    """
+    Normalizes OCR results from different backends (EasyOCR, RapidOCR, etc.)
+    and concatenates text lines above a confidence threshold.
+    Accepts result rows shaped like:
+      - (bbox, text, score)
+      - {'text': '...', 'score': 0.9, ...}
+      - ('text', 'score') in rare cases
+    """
+    lines = []
+    for row in results or []:
+        text, score = None, None
+
+        # Tuple/list shapes
+        if isinstance(row, (list, tuple)):
+            # (bbox, text, score)
+            if len(row) >= 3 and isinstance(row[1], str):
+                text = row[1]
+                score = row[2]
+            # (text, score)
+            elif len(row) >= 2 and isinstance(row[0], str):
+                text = row[0]
+                score = row[1]
+            # Just (text,)
+            elif len(row) >= 1 and isinstance(row[0], str):
+                text = row[0]
+
+        # Dict shape
+        elif isinstance(row, dict):
+            text = row.get("text") or row.get("label") or row.get("content")
+            score = row.get("score") or row.get("confidence")
+
+        # Coerce score -> float|None
+        score_f = _to_float_or_none(score)
+
+        # Keep if we have text and either no score or score >= threshold
+        if text:
+            if score_f is None or score_f >= float(min_conf):
+                lines.append(text)
+
+    return "\n".join(lines).strip()
 
 def extract_text(image_bytes: bytes) -> str:
     """
