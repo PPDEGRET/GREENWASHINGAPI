@@ -687,7 +687,6 @@ def render_analysis_results(
     gpt_level: str,
     gpt_reasons: list[str],
     gpt_error: bool,
-    gpt_error_message: str,
     analysis_id: str | None,
     image_bytes: bytes,
     extracted_text: str,
@@ -707,7 +706,6 @@ def render_analysis_results(
 
     summary_message = level_messages.get(level_class, "Risk level unavailable.")
     reasons = [str(r) for r in (gpt_reasons or []) if str(r).strip()]
-    error_message = (gpt_error_message or "").strip()
 
     with st.container():
         st.markdown("<div class='leaf-shell'>", unsafe_allow_html=True)
@@ -723,8 +721,7 @@ def render_analysis_results(
         )
 
         if gpt_error:
-            fallback_message = error_message or (reasons[0] if reasons else "GPT review fell back to a safe default.")
-            st.warning(fallback_message)
+            st.warning("GPT review fell back to a safe default. Check your API key and try again.")
 
         st.markdown(f"<p style='color:#3e5245; margin-top:0.4rem;'>{summary_message}</p>", unsafe_allow_html=True)
 
@@ -813,19 +810,12 @@ with st.spinner("Running OCR..."):
 with st.spinner("Reviewing with GPT..."):
     gpt_out = judge_with_gpt(extracted_text) or {}
     if not isinstance(gpt_out, dict):
-        gpt_out = {
-            "risk_score": 0,
-            "level": "Low",
-            "reasons": ["LLM judge error."],
-            "_error": True,
-            "_error_message": "GPT review failed due to an unexpected response.",
-        }
+        gpt_out = {"risk_score": 0, "level": "Low", "reasons": ["LLM judge error."], "_error": True}
 
 gpt_score = int(gpt_out.get("risk_score", 0) or 0)
 gpt_level = str(gpt_out.get("level", "Low") or "Low")
 gpt_reasons = gpt_out.get("reasons", []) or []
 gpt_error = bool(gpt_out.get("_error"))
-gpt_error_message = str(gpt_out.get("_error_message") or "").strip()
 
 if isinstance(gpt_reasons, list):
     reasons_for_storage = [str(r) for r in gpt_reasons if str(r).strip()]
@@ -864,7 +854,6 @@ render_analysis_results(
     gpt_level=gpt_level,
     gpt_reasons=reasons_for_storage,
     gpt_error=gpt_error,
-    gpt_error_message=gpt_error_message,
     analysis_id=analysis_id,
     image_bytes=image_bytes,
     extracted_text=extracted_text,
