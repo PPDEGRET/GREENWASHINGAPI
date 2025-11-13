@@ -1,81 +1,63 @@
-## Monorepo development
+# LeafCheck — AI Greenwashing Detector
 
-Run the backend and frontend in separate terminals:
+LeafCheck reviews advertising creatives for potential greenwashing claims. The project now ships as a FastAPI backend with a static, responsive web frontend.
 
-- Terminal 1: `uvicorn src.api:app --reload --port 8080`
-- Terminal 2: `cd web && npm install && npm run dev`
+## Architecture Overview
+- **Backend** — `src/api.py` (FastAPI) reuses the OCR, GPT judging, and PDF report helpers found in `src/ocr.py`, `src/judge_gpt.py`, and `src/report.py`.
+- **Frontend** — `/web` is a single-page static site served with any static file host. It talks to the API via HTTP.
+- **Legacy UI** — The original Streamlit dashboard lives in `src/_legacy_app.py` for reference but is no longer started by default.
 
-# LeafCheck — Ad Screenshot Analyzer
+## Prerequisites
+- Python 3.11+
+- An `.env` file that exposes the existing variables (`OPENAI_API_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE`, `APP_BASE_URL`). See `.env.example` for placeholders.
 
-Run locally:
+## Local Development
+Create a virtual environment and install dependencies:
+
 ```bash
-python -m venv .venv && source .venv/bin/activate  # (Windows: .venv\Scripts\activate)
+python -m venv .venv
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-streamlit run src/app.py
+```
 
+### Run the FastAPI backend
+```bash
+python -m uvicorn src.api:app --reload --host 0.0.0.0 --port 8000
+```
 
-## 3) Push to GitHub
-- Create a new public or private repo, push the project.
+### Serve the static frontend
+```bash
+cd web
+python -m http.server 5500
+```
 
-## 4) Deploy on Streamlit Cloud
-- Go to share.streamlit.io → “New app” → select your repo/branch → `src/app.py`.
-- It will auto-install `apt.txt` and `requirements.txt`.
-- Set **Secrets** later if you add API keys: in the app settings → “Secrets”.
+Open http://localhost:5500 in your browser. The page calls the API at `http://localhost:8000` for OCR, GPT judging, and PDF exports.
 
-**Notes**
-- Streamlit Cloud sleeps on inactivity (free plan). Wakes in a few seconds.
-- If OCR gives a “tesseract not found” error, double-check `apt.txt` exists at repo root.
+### Optional: Legacy Streamlit dashboard
+```bash
+streamlit run src/_legacy_app.py --server.address=0.0.0.0 --server.port=8501
+```
 
----
+## API Endpoints
+- `GET /health` → `{"status": "ok"}`
+- `POST /ocr` (multipart `file`) → `{"text": "..."}`
+- `POST /judge` (`text` form field) → GPT risk assessment payload
+- `POST /analyze` (multipart `file`) → `{ "score", "level", "reasons", "text" }`
+- `POST /report.pdf` (multipart `file`) → Streams a generated PDF download
 
-# Option B — Hugging Face Spaces (simple + free tier + good for demos)
+All endpoints share the existing environment configuration loaded via `python-dotenv`.
 
-**Good for** easy public sharing, reproducible builds, Docker optional.
+## Docker
+Build and run the API with uvicorn:
 
-## 1) Use the same repo, add one file: `runtime.txt`
+```bash
+docker build -t leafcheck .
+docker run --rm -p 8000:8000 --env-file .env leafcheck
+```
 
+Then serve `/web` with any static host (e.g., `python -m http.server 5500`).
 
-## 2) Create a Space
-- Go to huggingface.co → Spaces → Create → **Streamlit** template
-- Connect your GitHub (or upload zip).
-- Set “App File” = `src/app.py`
-- “Hardware” = CPU basic.
-
-**If Tesseract missing**  
-HF Spaces Streamlit runner doesn’t install apt packages by default. If OCR fails, switch the Space **type to Docker** and use the Dockerfile below from Option C.
-
----
-
-# Option C — Docker + any host (Fly.io / Render / Railway / Google Cloud Run)
-
-**Good for** robustness, custom OS deps (e.g., Tesseract), private apps, custom domains.
-
-## 1) Add these files (root)
-
-### `Dockerfile`
-```dockerfile
-FROM python:3.11-slim
-
-# System deps (tesseract)
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    tesseract-ocr libtesseract-dev \
-  && rm -rf /var/lib/apt/lists/*
-
-WORKDIR /app
-
-# Copy requirements first to leverage docker layer cache
-COPY requirements.txt ./requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy source
-COPY src ./src
-COPY assets ./assets
-
-# Streamlit config (headless)
-ENV PYTHONUNBUFFERED=1
-ENV STREAMLIT_SERVER_HEADLESS=true
-ENV STREAMLIT_BROWSER_GATHER_USAGE_STATS=false
-ENV PORT=8501
-
-EXPOSE 8501
-CMD ["streamlit", "run", "src/app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+## Contributing
+- Keep CSS tokens and typography consistent with the design system in `AGENTS.md`.
+- Ensure OCR, GPT, and PDF flows continue to work end-to-end.
+- Do not commit secrets; rely on environment variables and `.env` files for local development.
