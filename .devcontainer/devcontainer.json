@@ -2,17 +2,14 @@
   "name": "LeafCheck Codespace",
   "image": "mcr.microsoft.com/devcontainers/python:3.11",
   "postCreateCommand": "sudo apt-get update && sudo apt-get install -y libgl1 libglib2.0-0 libsm6 libxext6 libxrender1 && pip install --upgrade pip && pip install -r requirements.txt",
-  "forwardPorts": [3000, 8080, 8501],
+  "postStartCommand": "pip install -r requirements.txt && python -m uvicorn src.api:app --host 0.0.0.0 --port 8000",
+  "forwardPorts": [8000, 5500],
   "portsAttributes": {
-    "8501": {
-      "label": "LeafCheck",
+    "8000": {
+      "label": "LeafCheck API",
       "onAutoForward": "openBrowser"
     },
-    "8080": {
-      "label": "LeafCheck API",
-      "onAutoForward": "notify"
-    },
-    "3000": {
+    "5500": {
       "label": "LeafCheck Web",
       "onAutoForward": "openBrowser"
     }
@@ -22,6 +19,6 @@
     "SUPABASE_URL": "${{ secrets.SUPABASE_URL }}",
     "SUPABASE_ANON_KEY": "${{ secrets.SUPABASE_ANON_KEY }}",
     "SUPABASE_SERVICE_ROLE": "${{ secrets.SUPABASE_SERVICE_ROLE }}",
-    "APP_BASE_URL": "http://localhost:8501"
+    "APP_BASE_URL": "http://localhost:5500"
   }
 }
