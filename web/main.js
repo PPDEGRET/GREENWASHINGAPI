@@ -1,163 +1,129 @@
-const API_BASE = "http://localhost:8000";
+document.addEventListener("DOMContentLoaded", () => {
+    const API_BASE_URL = "http://localhost:8000/api/v1";
 
-const els = {
-  landing: document.getElementById("app-state-landing"),
-  progress: document.getElementById("app-state-progress"),
-  results: document.getElementById("app-state-results"),
-  dropzone: document.getElementById("dropzone"),
-  fileInput: document.getElementById("file-input"),
-  scoreDonut: document.getElementById("score-donut"),
-  triggersList: document.getElementById("triggers-list"),
-  improvementsList: document.getElementById("improvements-list"),
-  downloadPdfBtn: document.getElementById("download-pdf-btn"),
-  reanalyzeBtn: document.getElementById("reanalyze-btn"),
-  progressSteps: document.querySelectorAll("[data-step]"),
-};
+    const state = {
+        file: null,
+    };
 
-const appStates = {
-    landing: els.landing,
-    progress: els.progress,
-    results: els.results
-}
+    const ui = {
+        states: {
+            landing: document.getElementById("app-state-landing"),
+            progress: document.getElementById("app-state-progress"),
+            results: document.getElementById("app-state-results"),
+        },
+        dropzone: document.getElementById("dropzone"),
+        fileInput: document.getElementById("file-input"),
+        progressSteps: document.querySelectorAll(".progress-steps .step"),
+        scoreDonut: document.getElementById("score-donut"),
+        riskLevel: document.getElementById("risk-level"),
+        triggersList: document.getElementById("triggers-list"),
+        improvementsList: document.getElementById("improvements-list"),
+        downloadPdfBtn: document.getElementById("download-pdf-btn"),
+        reanalyzeBtn: document.getElementById("reanalyze-btn"),
+    };
 
-let lastFile = null;
+    const switchState = (newState) => {
+        Object.values(ui.states).forEach(stateEl => stateEl.hidden = true);
+        ui.states[newState].hidden = false;
+    };
 
-function switchState(state) {
-  console.log("Switching to state:", state);
-  for (const appState in appStates) {
-    if (appState === state) {
-        console.log("Showing:", appState);
-        appStates[appState].hidden = false;
-    } else {
-        console.log("Hiding:", appState);
-        appStates[appState].hidden = true;
-    }
-  }
-}
+    const handleFileUpload = async (file) => {
+        state.file = file;
+        switchState("progress");
+        runProgressIndicator();
 
-function runProgressIndicator() {
-    let activeIndex = 0;
-    els.progressSteps.forEach((step, index) => {
-        setTimeout(() => {
-            step.classList.add("active");
-        }, index * 750);
-    });
-}
+        const formData = new FormData();
+        formData.append("file", file);
 
-function drawDonut(score) {
-  const pct = Math.max(0, Math.min(100, score || 0));
-  const html = `
-    <svg viewBox="0 0 36 36" class="score-svg">
-      <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-            fill="none" stroke="#e6e6e6" stroke-width="3"></path>
-      <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-            fill="none" stroke="#d9534f" stroke-width="3"
-            stroke-dasharray="${pct}, 100"></path>
-      <text x="18" y="22" text-anchor="middle" font-size="12" class="score-text">${pct}</text>
-    </svg>
-    `;
-  els.scoreDonut.innerHTML = html;
-}
+        try {
+            const response = await fetch(`${API_BASE_URL}/analyze`, {
+                method: "POST",
+                body: formData,
+            });
+            if (!response.ok) throw new Error("Analysis failed");
+            const data = await response.json();
+            renderResults(data);
+            switchState("results");
+        } catch (error) {
+            console.error("Error during analysis:", error);
+            alert("Analysis failed. Please try again.");
+            switchState("landing");
+        }
+    };
 
-function renderTriggers(triggers) {
-  els.triggersList.innerHTML = triggers
-    .map((item) => `<li>${item}</li>`)
-    .join("");
-}
+    const runProgressIndicator = () => {
+        ui.progressSteps.forEach((step, index) => {
+            setTimeout(() => step.classList.add("active"), index * 500);
+        });
+    };
 
-function renderImprovements() {
-    const improvements = [
-        "Be specific",
-        "Provide proof"
-    ]
-  els.improvementsList.innerHTML = improvements
-    .map((item) => `<li>${item}</li>`)
-    .join("");
-}
+    const renderResults = (data) => {
+        drawDonut(data.score);
+        ui.riskLevel.textContent = data.level;
+        ui.triggersList.innerHTML = data.reasons.map(reason => `<li>${reason}</li>`).join('');
+        // Placeholder for improvements
+        ui.improvementsList.innerHTML = `<li>Be more specific in your claims.</li><li>Provide third-party certifications.</li>`;
+    };
 
-async function handleFileUpload(file) {
-  lastFile = file;
-  switchState("progress");
-  runProgressIndicator();
+    const drawDonut = (score) => {
+        const pct = Math.max(0, Math.min(100, score || 0));
+        const html = `
+            <svg viewBox="0 0 36 36" class="score-svg">
+                <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                      fill="none" stroke="#e6e6e6" stroke-width="3"></path>
+                <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                      fill="none" stroke="${score > 70 ? '#f44336' : score > 30 ? '#ff9800' : '#4CAF50'}" stroke-width="3"
+                      stroke-dasharray="${pct}, 100"></path>
+                <text x="18" y="22" text-anchor="middle" font-size="12" class="score-text">${pct}</text>
+            </svg>`;
+        ui.scoreDonut.innerHTML = html;
+    };
 
-  const formData = new FormData();
-  formData.append("file", file);
+    const setupEventListeners = () => {
+        ui.dropzone.addEventListener("click", () => ui.fileInput.click());
+        ui.dropzone.addEventListener("dragover", e => {
+            e.preventDefault();
+            ui.dropzone.classList.add("dragover");
+        });
+        ui.dropzone.addEventListener("dragleave", () => ui.dropzone.classList.remove("dragover"));
+        ui.dropzone.addEventListener("drop", e => {
+            e.preventDefault();
+            ui.dropzone.classList.remove("dragover");
+            if (e.dataTransfer.files.length) handleFileUpload(e.dataTransfer.files[0]);
+        });
+        ui.fileInput.addEventListener("change", e => {
+            if (e.target.files.length) handleFileUpload(e.target.files[0]);
+        });
+        ui.downloadPdfBtn.addEventListener("click", async () => {
+            if (!state.file) return;
+            const formData = new FormData();
+            formData.append("file", state.file);
+            try {
+                const response = await fetch(`${API_BASE_URL}/report.pdf`, {
+                    method: "POST",
+                    body: formData,
+                });
+                const blob = await response.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = "GreenCheck_Report.pdf";
+                a.click();
+                URL.revokeObjectURL(url);
+            } catch (error) {
+                console.error("Error downloading PDF:", error);
+            }
+        });
+        ui.reanalyzeBtn.addEventListener("click", () => {
+            state.file = null;
+            switchState("landing");
+        });
+    };
 
-  try {
-    console.log("Fetching data from API...");
-    const response = await fetch(`${API_BASE}/analyze`, {
-      method: "POST",
-      body: formData,
-    });
-    console.log("API response received:", response);
-    const data = await response.json();
-    console.log("API data parsed:", data);
+    const init = () => {
+        switchState("landing");
+        setupEventListeners();
+    };
 
-    drawDonut(data.score);
-    renderTriggers(data.reasons);
-    renderImprovements();
-    switchState("results");
-  } catch (error) {
-    console.error("Error analyzing file:", error);
-    alert("There was an an error analyzing your file. Please try again.");
-    switchState("landing");
-  }
-}
-
-function setupEventListeners() {
-  els.dropzone.addEventListener("click", () => els.fileInput.click());
-  els.dropzone.addEventListener("dragover", (e) => {
-    e.preventDefault();
-    els.dropzone.classList.add("dragover");
-  });
-  els.dropzone.addEventListener("dragleave", () => {
-    els.dropzone.classList.remove("dragover");
-  });
-  els.dropzone.addEventListener("drop", (e) => {
-    e.preventDefault();
-    els.dropzone.classList.remove("dragover");
-    if (e.dataTransfer.files.length) {
-      handleFileUpload(e.dataTransfer.files[0]);
-    }
-  });
-
-  els.fileInput.addEventListener("change", (e) => {
-    if (e.target.files.length) {
-      handleFileUpload(e.target.files[0]);
-    }
-  });
-
-  els.downloadPdfBtn.addEventListener("click", async () => {
-    if (!lastFile) return;
-    const formData = new FormData();
-    formData.append("file", lastFile);
-
-    try {
-      const response = await fetch(`${API_BASE}/report.pdf`, {
-        method: "POST",
-        body: formData,
-      });
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "report.pdf";
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error("Error downloading PDF:", error);
-    }
-  });
-
-  els.reanalyzeBtn.addEventListener("click", () => {
-    lastFile = null;
-    switchState("landing");
-  });
-}
-
-function init() {
-  switchState("landing");
-  setupEventListeners();
-}
-
-init();
+    init();
+});

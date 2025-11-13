@@ -1,140 +1,131 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
+<head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>GreenCheck - AI Greenwashing Detector</title>
-    <meta
-      name="description"
-      content="Upload an ad and get a greenwashing risk analysis."
-    />
+    <meta name="description" content="Upload an ad and get a greenwashing risk analysis." />
     <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="styles.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800&display=swap"
-      rel="stylesheet"
-    />
-  </head>
-  <body>
-    <header>
-      <div class="container">
-        <a href="/" class="logo">
-          <img src="assets/logo.svg" alt="GreenCheck Logo" />
-          <span>GreenCheck</span>
-        </a>
-        <nav>
-          <a href="#">Dashboard</a>
-          <a href="#">History</a>
-          <a href="#">About</a>
-        </nav>
-        <div class="header-actions">
-          <a href="#" class="btn-secondary">Login</a>
-          <a href="#" class="btn-primary">Sign Up</a>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <a href="/" class="logo">
+                <img src="assets/logo.svg" alt="GreenCheck Logo" />
+                <span>GreenCheck</span>
+            </a>
         </div>
-      </div>
     </header>
 
     <main>
-      <div id="app-state-landing" class="app-state">
-        <section class="hero">
-          <div class="container">
-            <h1>Upload an ad — get a greenwashing risk analysis.</h1>
-            <p class="subtitle">
-              Our AI analyzes your marketing materials to identify potential
-              greenwashing risks and provides a detailed report.
-            </p>
-            <div id="dropzone" class="dropzone" tabindex="0">
-              <p>Drag & drop your ad here</p>
-              <p class="or-divider">or</p>
-              <button type="button" class="btn-primary browse-btn">
-                Browse Files
-              </button>
-              <input
-                type="file"
-                id="file-input"
-                accept="image/png,image/jpeg,image/webp"
-                hidden
-              />
-            </div>
-          </div>
-        </section>
-
-        <section class="features">
-            <div class="container">
-                <div class="feature-card">
-                    <h3>Understand Your Score</h3>
-                    <p>Get a clear and concise risk score for your ad, with a detailed breakdown of the factors that influenced the score.</p>
-                </div>
-                <div class="feature-card">
-                    <h3>AI-Powered Insights</h3>
-                    <p>Our advanced AI analyzes your ad's text and imagery to provide you with actionable insights and recommendations.</p>
-                </div>
-                <div class="feature-card">
-                    <h3>Go Premium</h3>
-                    <p>Unlock advanced features like detailed reports, historical analysis, and competitive benchmarking.</p>
-                </div>
-            </div>
-        </section>
-
-
-      </div>
-
-      <div id="app-state-progress" class="app-state" hidden>
-        <div class="container">
-          <div class="progress-card">
-            <div class="spinner"></div>
-            <h2>Analyzing your ad...</h2>
-            <p>Our AI is extracting text and verifying claims.</p>
-            <div class="progress-steps">
-              <div class="step" data-step="ocr">OCR</div>
-              <div class="step" data-step="detect">Claim Detection</div>
-              <div class="step" data-step="score">Risk Scoring</div>
-              <div class="step" data-step="report">Report Building</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div id="app-state-results" class="app-state" hidden>
-        <div class="container">
-            <h2>Analysis Results</h2>
-            <p class="subtitle">Based on the content provided for analysis.</p>
-            <div class="results-card">
-                <div class="results-score">
-                    <div class="score-donut" id="score-donut"></div>
-                    <p>This claim has a high likelihood of being perceived as greenwashing.</p>
-                </div>
-                <div class="results-details">
-                    <div class="triggers">
-                        <h3>Key Triggers Identified</h3>
-                        <ul id="triggers-list"></ul>
+        <div id="app-state-landing" class="app-state">
+            <section class="hero">
+                <div class="container">
+                    <h1>Instant Greenwashing Risk Analysis</h1>
+                    <p class="subtitle">
+                        Upload your ad creative and get an instant AI-powered risk analysis.
+                    </p>
+                    <div id="dropzone" class="dropzone" tabindex="0">
+                        <div class="dropzone-content">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <p>Drag & drop your ad here, or click to browse</p>
+                            <input type="file" id="file-input" accept="image/png,image/jpeg,image/webp" hidden />
+                        </div>
                     </div>
-                    <div class="improvements">
-                        <h3>How to Improve</h3>
-                        <ul id="improvements-list"></ul>
+                </div>
+            </section>
+            <section class="steps-overview">
+                <div class="container">
+                    <div class="step-item">
+                        <div class="step-icon">1</div>
+                        <h3>Upload Your Ad</h3>
+                        <p>Drag and drop your ad creative into the designated area.</p>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-icon">2</div>
+                        <h3>AI Analysis</h3>
+                        <p>Our AI analyzes the content for potential greenwashing.</p>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-icon">3</div>
+                        <h3>Get Your Report</h3>
+                        <p>Receive a detailed report with actionable insights.</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div id="app-state-progress" class="app-state" hidden>
+            <div class="container">
+                <div class="progress-card">
+                    <div class="spinner"></div>
+                    <h2>Analyzing your creative...</h2>
+                    <p>Our AI is reviewing your ad. This may take a moment.</p>
+                    <div class="progress-steps">
+                        <div class="step" data-step="ocr">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Extracting Text</span>
+                        </div>
+                        <div class="step" data-step="detect">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Analyzing Claims</span>
+                        </div>
+                        <div class="step" data-step="score">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Calculating Risk Score</span>
+                        </div>
+                        <div class="step" data-step="report">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Generating Report</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="app-state-results" class="app-state" hidden>
+            <div class="container">
+                <div class="results-header">
+                    <h2>Analysis Complete</h2>
+                    <p>Below is the risk analysis for your ad creative.</p>
+                </div>
+                <div class="results-card">
+                    <div class="results-score">
+                        <div class="score-donut" id="score-donut"></div>
+                        <div class="score-summary">
+                            <h3 id="risk-level"></h3>
+                            <p>This ad has a high likelihood of being perceived as greenwashing.</p>
+                        </div>
+                    </div>
+                    <div class="results-details">
+                        <div class="triggers">
+                            <h3>Identified Risk Factors</h3>
+                            <ul id="triggers-list"></ul>
+                        </div>
+                        <div class="improvements">
+                            <h3>Recommendations</h3>
+                            <ul id="improvements-list"></ul>
+                        </div>
                     </div>
                     <div class="results-actions">
-                        <button id="download-pdf-btn" class="btn-primary">Download Report (PDF)</button>
-                        <button id="reanalyze-btn" class="btn-secondary">Re-analyze Another Ad</button>
+                        <button id="download-pdf-btn" class="btn-primary">
+                            <i class="fas fa-file-pdf"></i>
+                            Download PDF Report
+                        </button>
+                        <button id="reanalyze-btn" class="btn-secondary">
+                            <i class="fas fa-redo"></i>
+                            Analyze Another Ad
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
-      </div>
     </main>
-
-    <footer>
-      <div class="container">
-        <p>© 2024 GreenCheck. All rights reserved.</p>
-        <div class="footer-links">
-          <a href="#">Terms of Service</a>
-          <a href="#">Privacy Policy</a>
-        </div>
-      </div>
-    </footer>
-
     <script src="main.js"></script>
-  </body>
+</body>
 </html>
