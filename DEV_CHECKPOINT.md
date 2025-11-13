@@ -1,156 +1,68 @@
-🧭 Dev Checkpoint Doc — LeafCheck (AI Greenwashing Detector)
+🧭 Dev Checkpoint Doc — GreenCheck (AI Greenwashing Detector)
 
-Date: October 2025
-Maintainer: Henri Brown
+This is a living document used by AI agents to record their progress, share findings, and maintain context in the GreenCheck project.
 
-🌿 Project Name
+**Last updated:** 2024-11-07 by an AI agent.
+**Current objective:** Refine the unified FastAPI + static web app.
 
-LeafCheck — AI Greenwashing Detector / Ad Screenshot Analyzer
+---
 
-Purpose:
-Upload an ad (PNG/JPG), extract its text (OCR), analyze potential greenwashing risk (rule-based + AI), and export a PDF report summarizing risk levels, triggers, and recommendations.
+### Project Overview
+-   **Name:** GreenCheck — AI Greenwashing Detector / Ad Screenshot Analyzer
+-   **Tech Stack:** Python (FastAPI, ReportLab, OpenCV), vanilla JS/CSS/HTML
+-   **Infrastructure:** Docker, GitHub Codespaces
+-   **DB:** Supabase (for user data, not analysis results)
+-   **Core Logic:**
+    -   `ocr.py`: Extracts text from images.
+    -   `judge_gpt.py`: Scores text for greenwashing risk using an LLM.
+    -   `report.py`: Generates downloadable PDF reports.
 
-⚙️ Current Environment & Stack
-🧰 Runtime / Container
+---
 
-Running fully online via GitHub Codespaces
+### How to Run Locally
 
-Python 3.11 (devcontainer image: mcr.microsoft.com/devcontainers/python:3.11)
+1.  **Backend (FastAPI):**
+    ```bash
+    python -m uvicorn src.api:app --host 0.0.0.0 --port 8000 --reload
+    ```
+2.  **Frontend (Static Site):**
+    ```bash
+    cd web && python -m http.server 5500
+    ```
+3.  **Access:**
+    -   Frontend: `http://localhost:5500`
+    -   Backend API: `http://localhost:8000`
 
-Streamlit app running on port 8501
+---
 
-Persistent development container (devcontainer.json at repo root) with automatic pip install and secrets injection for both container and remote VS Code sessions
+### Key Findings & Agent Notes
 
-Supabase backend for Auth, DB, and storage
+*   **Initial setup (2024-11-04):** The repo started with a Streamlit app (`src/app.py`) and a separate Next.js marketing site (`/web-legacy`). The goal is to merge these into a single, modern user experience.
+*   **Architecture shift (2024-11-06):**
+    -   A new static frontend was created in `/web` (vanilla HTML/CSS/JS).
+    -   A FastAPI server (`src/api.py`) was introduced to expose the core logic (OCR, judging) over a REST API.
+    -   Streamlit is now considered legacy and should be phased out.
+*   **CORS Configuration (as of 2024-11-07):** The FastAPI backend uses `CORSMiddleware` to allow requests from the frontend. The current configuration is permissive for local development (`allow_origins=["*"]`). This should be tightened for production.
+*   **Environment Variables:** Secrets like `OPENAI_API_KEY` are loaded from a `.env` file locally and injected via Codespaces secrets in the cloud. `AGENTS.md` has the full list.
+*   **Frontend State Management:** The new `/web` frontend is a single-page app that simulates different "screens" (Landing, Progress, Results) by toggling the `hidden` attribute on container divs. All logic is in `main.js`.
+*   **Bug Watch:** There was a persistent CORS issue during development that was resolved by switching to a wildcard origin. This highlights the importance of checking server logs (`api_server.log`) and browser console output for connection errors.
 
-🧩 Key Python Libraries
+---
 
-streamlit, rapidocr-onnxruntime, transformers, torch (CPU),
-reportlab, pillow, opencv-python-headless,
-supabase, openai, httpx==0.27.2, numpy
+### Deployment & Docker
 
-🗂️ File / Folder Structure
-/src/
-   app.py              ← main Streamlit app (UI + workflow)
-   analyzer.py         ← recalibrated rule/ML scoring pipeline
-   ocr.py              ← RapidOCR text extraction with preprocessing
-   recommender.py      ← generates improvement tips
-   report.py           ← PDF export (ReportLab)
-   judge_gpt.py        ← GPT-based second opinion
-   db.py               ← Supabase client helpers (env-aware)
-   config.py           ← centralized settings + env validation
-   risk_rules.py       ← rule definitions for analyzer
-   utils.py            ← misc helpers
-/dockerfile
-/requirements.txt
-/devcontainer.json
-/DEV_CHECKPOINT.md     ← this document
+-   GreenCheck runs in Codespaces via:
+    -   `.devcontainer/devcontainer.json`: Defines the development environment.
+    -   `dockerfile`: Packages the Python application.
+-   The current Docker setup only runs the FastAPI backend. The static frontend is served separately. For production, these could be combined into a single container or served by a dedicated static host.
 
-🌍 Environment Variables (.env or Codespaces Secrets)
-OPENAI_API_KEY=
-SUPABASE_URL=
-SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE= (optional, only required for admin flows)
-APP_BASE_URL=http://localhost:8501 (defaulted in code if unset)
+---
 
-✅ Working Features
-1. Core App Flow
+### User Roles & Supabase
 
-Image upload (PNG/JPG)
+-   **Anonymous users:** OCR + GreenCheck scoring + PDF export (no Supabase writes)
+-   **Authenticated users (future):** Will have access to analysis history, saved reports, and team features. This will require integrating Supabase auth on the frontend and using the user-specific Supabase client in `db.py`.
 
-OCR text extraction via RapidOCR with CLAHE/denoise preprocessing fallback
+---
 
-Hybrid analysis:
-
-- Rule-based triggers (keywords: “carbon neutral”, “offsets”, “recycled plastic”, etc.)
-- Evidence dampening logic (third-party assurance, specificity, scopes)
-- Zero-shot transformer nudge (facebook/bart-large-mnli) to adjust risk trend
-- Recalibrated score blending raw risk, damped risk, and mitigation factors for clearer Low/Medium/High levels
-
-GPT Judge (optional, premium only):
-
-- Uses OpenAI API for second opinion when enabled
-- Independent score + rationale display (no more combined toggle)
-
-PDF Report export:
-
-Image, extracted text, scores, triggers, recommendations
-
-Streamlit UI updates:
-
-- GPT toggle disabled unless a premium user is logged in
-- Sidebar guidance for anonymous/free users
-- Score breakdown tooltips surface risk/evidence contributions
-
-2. Auth + Database Integration (Supabase)
-
-Sidebar login/signup/logout + forgot password + change password
-
-Premium gating: GPT judge only available for app_users.is_premium = true
-
-Feedback loop: logged-in users can submit rating/comment linked to saved analysis rows
-
-Analyses logged to Supabase via user-authenticated client; automatic profile upsert for first-time users
-
-Environment-aware clients via config.py ensure secrets are loaded consistently across runtime contexts
-
-3. Dev Environment
-
-Codespaces: auto-install via devcontainer.json postCreate command
-
-Ports forwarded automatically (8501)
-
-Manual launch via:
-
-python -m streamlit run src/app.py --server.address=0.0.0.0 --server.port=8501
-
-⚠️ Known Issues / Roadblocks
-
-RapidOCR model (~120 MB) loads on first use; warm-up spinner may take a few seconds
-
-Feedback + analysis logging still depend on Supabase RLS; transient failures are surfaced as Streamlit warnings but results remain local only
-
-GPT Judge requires OPENAI_API_KEY; UI displays fallback messaging when missing or when user lacks premium access
-
-🚀 Next Steps
-🔹 Short-Term
-
-🧠 Polish RapidOCR confidence filtering (store spans + confidences for auditing)
-
-🧩 Finalize feedback analytics view inside the app or a separate admin dashboard
-
-🎨 Continue UI polish: responsive layout for score cards + breakdown, lighten copy
-
-🔹 Mid-Term
-
-🧾 Persist all analyses with timestamps & sector metadata for historical trends
-
-📊 Build Supabase dashboard or Streamlit admin page for feedback and trigger insights
-
-💬 Add fact-checking step (cross-check claims against eco-label datasets)
-
-🧱 Explore caching for OCR/analysis results to reduce latency per request
-
-🔹 Long-Term
-
-📦 Deploy public version (Streamlit Community Cloud / Hugging Face Spaces / Cloud Run)
-
-👥 Add subscription / Stripe integration for premium management
-
-🧮 Train custom greenwashing classifier (fine-tune ClimateBERT/DistilRoBERTa)
-
-🪄 Offer AI-assisted claim rewriting (“How to make this statement compliant”)
-
-💾 Last Known Good State
-
-LeafCheck runs in Codespaces via:
-
-python -m streamlit run src/app.py --server.address=0.0.0.0 --server.port=8501
-
-Anonymous users: OCR + LeafCheck scoring + PDF export (no Supabase writes)
-
-Premium logged-in users: GPT Judge toggle, saved analyses, feedback submission
-
-Supabase keys validated by config.py; environment mismatches raise explicit errors
-
-✅ End of Dev Checkpoint — LeafCheck (AI Greenwashing Tool)
+✅ End of Dev Checkpoint — GreenCheck (AI Greenwashing Tool)

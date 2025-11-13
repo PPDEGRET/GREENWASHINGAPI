@@ -240,3 +240,10 @@ footer {
         grid-template-columns: 1fr;
     }
 }
+
+.score-text {
+    font-size: 2.5rem;
+    font-weight: 800;
+    fill: var(--brand-strong);
+    transform: translateY(0.35em);
+}

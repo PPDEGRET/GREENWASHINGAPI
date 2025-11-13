@@ -1,6 +1,6 @@
-# AGENTS.md — LeafCheck Project Guidelines
+# AGENTS.md — GreenCheck Project Guidelines
 
-Project: LeafCheck — AI Greenwashing Detector / Ad Screenshot Analyzer  
+Project: GreenCheck — AI Greenwashing Detector / Ad Screenshot Analyzer
 Purpose: Guide AI agents and contributors to make consistent, safe, and well-structured changes.
 
 -------------------------------------------------------------------------------
@@ -89,7 +89,7 @@ cd web && python -m http.server 5500
 
 ### Docker Example
 docker run --rm -p 8501:8501 --env-file .env ^
-  -v "%CD%\src:/app/src" leafcheck
+  -v "%CD%\src:/app/src" greencheck
 
 -------------------------------------------------------------------------------
 

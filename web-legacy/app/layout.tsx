@@ -1,31 +1,22 @@
-import "./globals.css";
 import type { Metadata } from "next";
-import { Manrope } from "next/font/google";
-import { ReactNode } from "react";
+import { Inter } from "next/font/google";
+import "./globals.css";
 
-const manrope = Manrope({ subsets: ["latin"], variable: "--font-manrope" });
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "LeafCheck",
-  description: "Assess greenwashing risk with LeafCheck"
+  title: "GreenCheck",
+  description: "Assess greenwashing risk with GreenCheck",
 };
 
 export default function RootLayout({
-  children
-}: {
-  children: ReactNode;
-}) {
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
   return (
-    <html lang="en" className="bg-background-light">
-      <head>
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined"
-        />
-      </head>
-      <body className={`${manrope.className} bg-background-light text-dark-grey`}>
-        {children}
-      </body>
+    <html lang="en">
+      <body className={inter.className}>{children}</body>
     </html>
   );
 }
