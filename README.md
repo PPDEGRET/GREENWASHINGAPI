@@ -41,18 +41,20 @@ OPENAI_API_KEY=your_openai_api_key_here
 
 You will need to run the backend and frontend servers in separate terminals.
 
-**Backend:**
+**3. Run the application:**
 
+I have created a convenient script that starts both the backend and frontend servers for you.
+
+**On macOS/Linux:**
 ```bash
 # From the root of the project
-./run_api.sh
+./run_dev.sh
 ```
 
-**Frontend:**
-
-```bash
-# From the root of the project, in a separate terminal
-python -m http.server 5500 -d web
+**On Windows:**
+```batch
+# From the root of the project
+.\run_dev.bat
 ```
 
-Once both servers are running, you can access the application at `http://localhost:5500`.
+Once the script is running, you can access the application at `http://localhost:5500`.
