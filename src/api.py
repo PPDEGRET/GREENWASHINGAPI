@@ -22,14 +22,29 @@ from report import build_report
 
 load_dotenv()
 
-app = FastAPI(title="LeafCheck API", version="1.0.0")
+app = FastAPI(title="GreenCheck API", version="1.0.0")
+
+# Define allowed origins for local development
+origins = [
+    "http://localhost",
+    "http://localhost:8080",
+    "http://localhost:5500",
+    "http://localhost:3000",
+    "http://127.0.0.1",
+    "http://127.0.0.1:8080",
+    "http://127.0.0.1:5500",
+    "http://127.0.0.1:3000",
+]
+
+# In a production environment, you would fetch this from an environment variable
+# prod_origins = os.environ.get("PROD_ORIGINS", "").split(",")
+# origins.extend([origin for origin in prod_origins if origin])
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_origin_regex=r"https?://.*",
+    allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
 
@@ -76,7 +91,7 @@ async def analyze_endpoint(file: UploadFile = File(...)) -> JSONResponse:
         "reasons": judge_data.get("reasons", []) or [],
         "text": text,
     }
-    return JSONResponse(content=response, headers={"Access-Control-Allow-Origin": "*"})
+    return JSONResponse(content=response)
 
 
 @app.post("/report.pdf")
@@ -94,9 +109,5 @@ async def report_endpoint(file: UploadFile = File(...)) -> StreamingResponse:
         "reasons": judge_data.get("reasons", []) or [],
     }
     pdf_bytes, filename = build_report(blob, text, results)
-    headers = {
-        "Content-Disposition": f'attachment; filename="{filename}"',
-    }
+    headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
     return StreamingResponse(io.BytesIO(pdf_bytes), media_type="application/pdf", headers=headers)
-
-

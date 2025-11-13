@@ -23,10 +23,13 @@ const appStates = {
 let lastFile = null;
 
 function switchState(state) {
+  console.log("Switching to state:", state);
   for (const appState in appStates) {
     if (appState === state) {
+        console.log("Showing:", appState);
         appStates[appState].hidden = false;
     } else {
+        console.log("Hiding:", appState);
         appStates[appState].hidden = true;
     }
   }
@@ -50,7 +53,7 @@ function drawDonut(score) {
       <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
             fill="none" stroke="#d9534f" stroke-width="3"
             stroke-dasharray="${pct}, 100"></path>
-      <text x="18" y="20.35" class="score-text">${pct}</text>
+      <text x="18" y="22" text-anchor="middle" font-size="12" class="score-text">${pct}</text>
     </svg>
     `;
   els.scoreDonut.innerHTML = html;
@@ -81,11 +84,14 @@ async function handleFileUpload(file) {
   formData.append("file", file);
 
   try {
+    console.log("Fetching data from API...");
     const response = await fetch(`${API_BASE}/analyze`, {
       method: "POST",
       body: formData,
     });
+    console.log("API response received:", response);
     const data = await response.json();
+    console.log("API data parsed:", data);
 
     drawDonut(data.score);
     renderTriggers(data.reasons);

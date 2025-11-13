@@ -1,63 +1,30 @@
-# LeafCheck — AI Greenwashing Detector
+# GreenCheck — AI Greenwashing Detector
 
-LeafCheck reviews advertising creatives for potential greenwashing claims. The project now ships as a FastAPI backend with a static, responsive web frontend.
+GreenCheck reviews advertising creatives for potential greenwashing claims. The project now ships as a FastAPI backend with a static, responsive web frontend.
 
-## Architecture Overview
-- **Backend** — `src/api.py` (FastAPI) reuses the OCR, GPT judging, and PDF report helpers found in `src/ocr.py`, `src/judge_gpt.py`, and `src/report.py`.
-- **Frontend** — `/web` is a single-page static site served with any static file host. It talks to the API via HTTP.
-- **Legacy UI** — The original Streamlit dashboard lives in `src/_legacy_app.py` for reference but is no longer started by default.
+This repository contains the full source for the GreenCheck application, including:
+-   `/web`: A vanilla HTML/CSS/JS single-page application for the user interface.
+-   `/src`: The Python-based backend, including a FastAPI server and the core analysis logic.
 
-## Prerequisites
-- Python 3.11+
-- An `.env` file that exposes the existing variables (`OPENAI_API_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE`, `APP_BASE_URL`). See `.env.example` for placeholders.
+## Running Locally
 
-## Local Development
-Create a virtual environment and install dependencies:
+To run GreenCheck locally, you'll need two separate terminal sessions.
 
+**1. Start the Backend API:**
 ```bash
-python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
+# From the root of the project
+python -m uvicorn src.api:app --host 0.0.0.0 --port 8000
 ```
 
-### Run the FastAPI backend
+**2. Start the Frontend Server:**
 ```bash
-python -m uvicorn src.api:app --reload --host 0.0.0.0 --port 8000
-```
-
-### Serve the static frontend
-```bash
+# From the web directory
 cd web
 python -m http.server 5500
 ```
 
-Open http://localhost:5500 in your browser. The page calls the API at `http://localhost:8000` for OCR, GPT judging, and PDF exports.
+Once both servers are running, you can access the application at `http://localhost:5500`.
 
-### Optional: Legacy Streamlit dashboard
-```bash
-streamlit run src/_legacy_app.py --server.address=0.0.0.0 --server.port=8501
-```
+## About GreenCheck
 
-## API Endpoints
-- `GET /health` → `{"status": "ok"}`
-- `POST /ocr` (multipart `file`) → `{"text": "..."}`
-- `POST /judge` (`text` form field) → GPT risk assessment payload
-- `POST /analyze` (multipart `file`) → `{ "score", "level", "reasons", "text" }`
-- `POST /report.pdf` (multipart `file`) → Streams a generated PDF download
-
-All endpoints share the existing environment configuration loaded via `python-dotenv`.
-
-## Docker
-Build and run the API with uvicorn:
-
-```bash
-docker build -t leafcheck .
-docker run --rm -p 8000:8000 --env-file .env leafcheck
-```
-
-Then serve `/web` with any static host (e.g., `python -m http.server 5500`).
-
-## Contributing
-- Keep CSS tokens and typography consistent with the design system in `AGENTS.md`.
-- Ensure OCR, GPT, and PDF flows continue to work end-to-end.
-- Do not commit secrets; rely on environment variables and `.env` files for local development.
+GreenCheck is designed to help marketing, legal, and sustainability teams identify and mitigate greenwashing risks before campaigns go live. It uses a combination of Optical Character Recognition (OCR) and a Large Language Model (LLM) to analyze advertising materials and provide a risk score, detailed feedback, and recommendations for improvement.
