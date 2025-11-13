@@ -79,7 +79,10 @@ document.addEventListener("DOMContentLoaded", () => {
         ui.improvementsList.innerHTML = "";
         recs.forEach(rec => {
             const li = document.createElement("li");
-            li.textContent = rec;
+            // Backend may return either plain strings or rich RecommendationItem
+            // objects. Normalize to a human-readable message.
+            const text = (rec && typeof rec === "object") ? (rec.message || "") : String(rec || "");
+            li.textContent = text;
             ui.improvementsList.appendChild(li);
         });
     };
