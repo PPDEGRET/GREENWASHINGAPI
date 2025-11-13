@@ -58,3 +58,19 @@ def test_generate_recommendations_empty(engine):
     """Tests that an empty list of triggers produces an empty list of recommendations."""
     recommendations = engine.generate_recommendations([])
     assert not recommendations
+
+def test_generate_recommendations_from_hybrid_triggers(engine):
+    """Tests the mapping from a mix of rule-based and GPT-based triggers."""
+    triggers = ["superlatives", "omission", "jargon"]
+    recommendations = engine.generate_recommendations(triggers)
+
+    assert len(recommendations) == 3
+
+    rec_types = [rec.type for rec in recommendations]
+    assert "avoid_absolute" in rec_types
+    assert "evidence" in rec_types
+    assert "clarity" in rec_types
+
+    omission_rec = next(r for r in recommendations if r.type == "evidence")
+    assert omission_rec.severity == 3
+    assert omission_rec.triggered_by == ["omission"]

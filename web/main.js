@@ -62,24 +62,35 @@ document.addEventListener("DOMContentLoaded", () => {
         ui.riskLevel.textContent = data.level;
         ui.triggersList.innerHTML = (data.reasons || []).map(reason => `<li>${reason}</li>`).join('');
 
-        // Use GPT-backed recommendations when the field is present. Only fall
-        // back to static placeholders when talking to an older backend that
-        // doesn't send any `recommendations` field at all.
-        let recs = [];
-        if (Object.prototype.hasOwnProperty.call(data, "recommendations")) {
-            recs = Array.isArray(data.recommendations) ? data.recommendations : [];
-        } else {
-            recs = [
-                "Clarify the environmental claim with scope and metrics.",
-                "Provide external certifications or third-party verification.",
-                "Avoid absolute expressions such as '100% sustainable'.",
-            ];
+        const recommendations = data.recommendations || [];
+        ui.improvementsList.innerHTML = ""; // Clear existing recommendations
+
+        if (recommendations.length === 0) {
+            // Display a default message if no recommendations are provided
+            const li = document.createElement("li");
+            li.textContent = "No specific recommendations available. Ensure claims are clear and verifiable.";
+            li.className = "recommendation-item severity-default";
+            ui.improvementsList.appendChild(li);
+            return;
         }
 
-        ui.improvementsList.innerHTML = "";
-        recs.forEach(rec => {
+        // Sort recommendations by severity (highest first)
+        recommendations.sort((a, b) => b.severity - a.severity);
+
+        recommendations.forEach(rec => {
             const li = document.createElement("li");
-            li.textContent = rec;
+            li.className = `recommendation-item severity-${rec.severity}`;
+
+            const severityIndicator = document.createElement("span");
+            severityIndicator.className = "severity-indicator";
+            severityIndicator.setAttribute("aria-hidden", "true");
+
+            const message = document.createElement("span");
+            message.textContent = rec.message;
+
+            li.appendChild(severityIndicator);
+            li.appendChild(message);
+
             ui.improvementsList.appendChild(li);
         });
     };

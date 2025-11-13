@@ -9,8 +9,9 @@ class RecommendationEngine:
     """
 
     def __init__(self):
-        # This maps deterministic triggers to specific recommendation templates.
-        self._rule_trigger_map = {
+        # This maps both deterministic and subtle triggers to recommendation templates.
+        self._trigger_map = {
+            # Rule-based triggers
             "superlatives": {
                 "type": "avoid_absolute",
                 "message": "Avoid absolute environmental claims (e.g., 'carbon neutral', '100% sustainable') unless the scope is narrow, current, and backed by independent verification.",
@@ -26,6 +27,22 @@ class RecommendationEngine:
                 "message": "If mentioning carbon offsets, clearly state what is being offset, the standard used (e.g., Verra, Gold Standard), and avoid implying overall climate neutrality without full lifecycle analysis.",
                 "severity": 2,
             },
+            # GPT-based subtle triggers
+            "omission": {
+                "type": "evidence",
+                "message": "Provide complete information and avoid 'cherry-picking' data. Ensure that both positive and negative impacts are presented to give a full picture.",
+                "severity": 3,
+            },
+            "jargon": {
+                "type": "clarity",
+                "message": "Avoid undefined technical jargon. If a technical term is necessary, explain it in simple, accessible language.",
+                "severity": 1,
+            },
+            "misleading_comparison": {
+                "type": "clarity",
+                "message": "Ensure that any comparisons are fair, transparent, and compare like with like. Provide the context for any comparative claims.",
+                "severity": 2,
+            },
         }
 
     def detect_rule_based_triggers(self, text: str) -> List[str]:
@@ -34,33 +51,30 @@ class RecommendationEngine:
         """
         triggers = []
 
-        # Rule for superlatives and absolute claims
         superlative_pattern = r"\b(100%|eco-friendly|green|sustainable|carbon neutral|zero impact|climate positive)\b"
         if re.search(superlative_pattern, text, re.IGNORECASE):
             triggers.append("superlatives")
 
-        # Rule for future claims
         future_claim_pattern = r"\b(net-zero|carbon neutral by|sustainable by|goal is to|by 20[3-9][0-9])\b"
         if re.search(future_claim_pattern, text, re.IGNORECASE):
             triggers.append("future_claims")
 
-        # Rule for offsets
         offset_pattern = r"\b(offset|compensation|carbon credit)\b"
         if re.search(offset_pattern, text, re.IGNORECASE):
             triggers.append("offsets")
 
-        return list(set(triggers)) # Return unique triggers
+        return list(set(triggers))
 
     def generate_recommendations(self, triggers: List[str]) -> List[RecommendationItem]:
         """
-        Generates a list of RecommendationItem objects from a list of triggers.
-        This method will later be expanded to merge triggers from GPT analysis.
+        Generates a list of RecommendationItem objects from a combined list of triggers.
         """
         recommendations = []
+        processed_triggers: Set[str] = set()
 
         for trigger in triggers:
-            if trigger in self._rule_trigger_map:
-                rec_data = self._rule_trigger_map[trigger]
+            if trigger in self._trigger_map and trigger not in processed_triggers:
+                rec_data = self._trigger_map[trigger]
                 recommendations.append(
                     RecommendationItem(
                         type=rec_data["type"],
@@ -69,8 +83,6 @@ class RecommendationEngine:
                         triggered_by=[trigger],
                     )
                 )
-
-        # In the future, this is where we will merge and deduplicate
-        # recommendations from both rule-based and GPT-based triggers.
+                processed_triggers.add(trigger)
 
         return recommendations

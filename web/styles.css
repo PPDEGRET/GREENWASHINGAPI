@@ -203,12 +203,38 @@ body {
     position: relative;
 }
 
-.triggers li::before, .improvements li::before {
+.triggers li::before {
     content: "•";
     position: absolute;
     left: 0;
     color: var(--primary-color);
 }
+
+.improvements li {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 12px;
+    padding-left: 0;
+}
+
+.improvements li::before {
+    content: ""; /* Remove default bullet */
+}
+
+.severity-indicator {
+    flex-shrink: 0;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 12px;
+    margin-top: 6px; /* Align with text */
+}
+
+/* Severity Colors */
+.severity-3 .severity-indicator { background-color: #ef5350; } /* High - Red */
+.severity-2 .severity-indicator { background-color: #ff9800; } /* Medium - Orange */
+.severity-1 .severity-indicator { background-color: #4caf50; } /* Low - Green */
+.severity-default .severity-indicator { background-color: #e0e0e0; } /* Default */
 
 .results-actions {
     margin-top: 40px;
