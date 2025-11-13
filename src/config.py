@@ -67,7 +67,7 @@ def get_settings() -> Settings:
         supabase_url=_get_required_env("SUPABASE_URL"),
         supabase_anon_key=_get_required_env("SUPABASE_ANON_KEY"),
         supabase_service_role=_get_optional_env("SUPABASE_SERVICE_ROLE"),
-        app_base_url=_get_optional_env("APP_BASE_URL", "http://localhost:8501") or "http://localhost:8501",
+        app_base_url=_get_optional_env("APP_BASE_URL", "http://localhost:5500") or "http://localhost:5500",
         openai_api_key=_get_optional_env("OPENAI_API_KEY"),
     )
 
