@@ -7,8 +7,6 @@ import cv2
 import numpy as np
 from PIL import Image
 
-import streamlit as st
-
 _rapidocr_spec = importlib.util.find_spec("rapidocr_onnxruntime")
 if _rapidocr_spec:
     from rapidocr_onnxruntime import RapidOCR  # type: ignore[assignment]
@@ -16,7 +14,6 @@ else:  # pragma: no cover - exercised when the optional dependency is missing.
     RapidOCR = None  # type: ignore[assignment]
 
 
-@st.cache_resource(show_spinner=False)
 def _cached_reader() -> Optional["RapidOCR"]:
     """Instantiate RapidOCR once per process."""
     if RapidOCR is None:
@@ -125,11 +122,6 @@ def extract_text(image_bytes: bytes) -> str:
         return ""
     reader = _cached_reader()
     if reader is None:
-        st.error(
-            "OCR is unavailable because the optional dependency "
-            "`rapidocr-onnxruntime` is not installed. Please run "
-            "`pip install rapidocr-onnxruntime` to enable image text extraction."
-        )
         return ""
     image = Image.open(io.BytesIO(image_bytes))
     rgb = np.array(image.convert("RGB"))

@@ -6,28 +6,8 @@
     <title>LeafCheck - AI Greenwashing Detector</title>
     <meta
       name="description"
-      content="Instant GPT reviews for environmental claims."
+      content="Upload an ad and get a greenwashing risk analysis."
     />
-    <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://leafcheck.ai/" />
-    <meta property="og:title" content="LeafCheck - AI Greenwashing Detector" />
-    <meta
-      property="og:description"
-      content="Instant GPT reviews for environmental claims."
-    />
-    <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image" />
-    <meta property="twitter:url" content="https://leafcheck.ai/" />
-    <meta
-      property="twitter:title"
-      content="LeafCheck - AI Greenwashing Detector"
-    />
-    <meta
-      property="twitter:description"
-      content="Instant GPT reviews for environmental claims."
-    />
-
     <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="styles.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -36,196 +16,121 @@
       href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800&display=swap"
       rel="stylesheet"
     />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined"
-      rel="stylesheet"
-    />
   </head>
   <body>
     <header>
       <div class="container">
-        <a href="#hero" class="logo">
+        <a href="/" class="logo">
           <img src="assets/logo.svg" alt="LeafCheck Logo" />
           LeafCheck
         </a>
         <nav>
-          <a href="#features">Features</a>
-          <a href="#how-it-works">How It Works</a>
-          <a href="#changelog">Changelog</a>
+          <a href="#">Dashboard</a>
+          <a href="#">History</a>
+          <a href="#">About</a>
         </nav>
+        <div class="header-actions">
+          <a href="#" class="btn-secondary">Login</a>
+          <a href="#" class="btn-primary">Sign Up</a>
+        </div>
       </div>
     </header>
 
     <main>
-      <section class="hero" id="hero">
-        <div class="container hero-layout">
-          <div class="hero-copy">
-            <p class="eyebrow">AI-Powered Compliance Guardrails</p>
-            <h1>AI Greenwashing Detector</h1>
-            <p class="hero-subtitle">
-              Instant GPT reviews for environmental claims.
+      <div id="app-state-landing" class="app-state">
+        <section class="hero">
+          <div class="container">
+            <h1>Upload an ad — get a greenwashing risk analysis.</h1>
+            <p class="subtitle">
+              Our AI analyzes your marketing materials to identify potential
+              greenwashing risks and provides a detailed report.
             </p>
-            <ul class="hero-points">
-              <li>Conservative, EU-style risk scoring in seconds</li>
-              <li>Transparent reasoning you can share with stakeholders</li>
-              <li>Downloadable PDF evidence packs for audits</li>
-            </ul>
-          </div>
-          <div class="hero-panel" aria-live="polite">
-            <input
-              type="file"
-              id="fileInput"
-              accept="image/png,image/jpeg"
-              hidden
-            />
-            <div
-              class="dropzone"
-              id="dropzone"
-              role="button"
-              tabindex="0"
-              aria-describedby="dropzone-help"
-            >
-              <div class="drop-icon" aria-hidden="true">
-                <svg width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <rect x="1" y="1" width="50" height="50" rx="16" fill="#F1F7F3" stroke="#D9E8DE" />
-                  <path d="M26 16v20" stroke="#5EA476" stroke-width="3" stroke-linecap="round" />
-                  <path d="M16 26h20" stroke="#5EA476" stroke-width="3" stroke-linecap="round" />
-                </svg>
-              </div>
-              <h2>Drop your sustainability creative</h2>
-              <p id="dropzone-help">Drag and drop a JPG or PNG, or</p>
-              <button type="button" class="btn-primary browse-btn">Browse files</button>
-              <p class="file-hint">We keep your upload local to this session.</p>
+            <div id="dropzone" class="dropzone" tabindex="0">
+              <p>Drag & drop your ad here</p>
+              <p class="or-divider">or</p>
+              <button type="button" class="btn-primary browse-btn">
+                Browse Files
+              </button>
+              <input
+                type="file"
+                id="file-input"
+                accept="image/png,image/jpeg,image/webp"
+                hidden
+              />
             </div>
-            <section id="progress" class="progress-card" hidden>
-              <div class="spinner" role="presentation"></div>
-              <p class="progress-title">Analyzing your creative…</p>
-              <p class="progress-subtitle">Running OCR and GPT-powered checks.</p>
-              <div class="steps" role="list">
-                <span role="listitem" data-step="ocr">OCR</span>
-                <span role="listitem" data-step="detect">Claim Detection</span>
-                <span role="listitem" data-step="score">Risk Scoring</span>
-                <span role="listitem" data-step="report">Report Building</span>
-              </div>
-            </section>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <section id="features" class="features">
+        <section class="features">
+            <div class="container">
+                <div class="feature-card">
+                    <h3>Understand Your Score</h3>
+                    <p>Get a clear and concise risk score for your ad, with a detailed breakdown of the factors that influenced the score.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>AI-Powered Insights</h3>
+                    <p>Our advanced AI analyzes your ad's text and imagery to provide you with actionable insights and recommendations.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>Go Premium</h3>
+                    <p>Unlock advanced features like detailed reports, historical analysis, and competitive benchmarking.</p>
+                </div>
+            </div>
+        </section>
+
+
+      </div>
+
+      <div id="app-state-progress" class="app-state" hidden>
         <div class="container">
-          <h2>Built for sustainability and compliance teams</h2>
-          <div class="grid">
-            <div class="card">
-              <span class="material-symbols-outlined">assessment</span>
-              <h3>GPT-first risk scoring</h3>
-              <p>Conservative guidance aligned with emerging EU benchmarks.</p>
-            </div>
-            <div class="card">
-              <span class="material-symbols-outlined">auto_awesome</span>
-              <h3>Clear rationale</h3>
-              <p>Concise triggers you can hand to copywriters and counsel.</p>
-            </div>
-            <div class="card">
-              <span class="material-symbols-outlined">workspace_premium</span>
-              <h3>Downloadable evidence</h3>
-              <p>PDF summary with extracted copy and AI judgement.</p>
+          <div class="progress-card">
+            <div class="spinner"></div>
+            <h2>Analyzing your ad...</h2>
+            <p>Our AI is extracting text and verifying claims.</p>
+            <div class="progress-steps">
+              <div class="step" data-step="ocr">OCR</div>
+              <div class="step" data-step="detect">Claim Detection</div>
+              <div class="step" data-step="score">Risk Scoring</div>
+              <div class="step" data-step="report">Report Building</div>
             </div>
           </div>
         </div>
-      </section>
+      </div>
 
-      <section id="results" class="results" hidden>
-        <div class="container results-card">
-          <div class="results-grid">
-            <div class="score-column">
-              <div id="scoreDonut" class="donut" aria-hidden="true"></div>
-              <div class="score-copy">
-                <p class="score-label">Overall score</p>
-                <p id="scoreText" class="score-value">0 / 100</p>
-                <p id="levelText" class="score-level">Low</p>
-                <p id="scoreMessage" class="score-message">
-                  Upload a creative to see your greenwashing risk.
-                </p>
-              </div>
-            </div>
-            <div class="insights-column">
-              <div class="insight-block">
-                <h3>Key triggers identified</h3>
-                <ul id="triggers" class="insight-list"></ul>
-              </div>
-              <div class="insight-block">
-                <h3>How to improve</h3>
-                <ul id="improvements" class="insight-list"></ul>
-              </div>
-              <div class="result-actions">
-                <button id="pdfBtn" class="btn-primary" type="button">
-                  Download Report (PDF)
-                </button>
-                <button id="retryBtn" class="btn-ghost" type="button">
-                  Re-analyze another ad
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="how-it-works" class="how-it-works">
+      <div id="app-state-results" class="app-state" hidden>
         <div class="container">
-          <h2>How it works</h2>
-          <div class="steps-illustration">
-            <div class="step">
-              <div class="step-number">1</div>
-              <p>Upload creative</p>
+            <h2>Analysis Results</h2>
+            <p class="subtitle">Based on the content provided for analysis.</p>
+            <div class="results-card">
+                <div class="results-score">
+                    <div class="score-donut" id="score-donut"></div>
+                    <p>This claim has a high likelihood of being perceived as greenwashing.</p>
+                </div>
+                <div class="results-details">
+                    <div class="triggers">
+                        <h3>Key Triggers Identified</h3>
+                        <ul id="triggers-list"></ul>
+                    </div>
+                    <div class="improvements">
+                        <h3>How to Improve</h3>
+                        <ul id="improvements-list"></ul>
+                    </div>
+                    <div class="results-actions">
+                        <button id="download-pdf-btn" class="btn-primary">Download Report (PDF)</button>
+                        <button id="reanalyze-btn" class="btn-secondary">Re-analyze Another Ad</button>
+                    </div>
+                </div>
             </div>
-            <div class="step">
-              <div class="step-number">2</div>
-              <p>OCR + Claim detection</p>
-            </div>
-            <div class="step">
-              <div class="step-number">3</div>
-              <p>GPT risk scoring</p>
-            </div>
-            <div class="step">
-              <div class="step-number">4</div>
-              <p>Shareable PDF</p>
-            </div>
-          </div>
         </div>
-      </section>
-
-      <section id="changelog" class="changelog">
-        <div class="container">
-          <h2>Changelog / Updates</h2>
-          <ul>
-            <li>
-              <strong>v1.1.0 (2024-11-07):</strong> Introduced drag-and-drop hero, staged analysis progress, and refreshed results layout.
-            </li>
-            <li>
-              <strong>v1.0.0 (2024-11-04):</strong> Initial release of the LeafCheck landing page.
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <section class="trust-legal">
-        <div class="container">
-          <h2>Trust &amp; Legal</h2>
-          <p>
-            Your data is processed locally and never stored on our servers. For
-            more information, please see our privacy policy.
-          </p>
-        </div>
-      </section>
+      </div>
     </main>
 
     <footer>
       <div class="container">
-        <p>© 2024 LeafCheck</p>
+        <p>© 2024 LeafCheck. All rights reserved.</p>
         <div class="footer-links">
-          <a href="#">Terms</a>
-          <a href="#">Privacy</a>
+          <a href="#">Terms of Service</a>
+          <a href="#">Privacy Policy</a>
         </div>
       </div>
     </footer>
