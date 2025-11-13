@@ -44,12 +44,11 @@
   <body>
     <header>
       <div class="container">
-        <a href="#" class="logo">
+        <a href="#hero" class="logo">
           <img src="assets/logo.svg" alt="LeafCheck Logo" />
           LeafCheck
         </a>
         <nav>
-          <a href="#app">App</a>
           <a href="#features">Features</a>
           <a href="#how-it-works">How It Works</a>
           <a href="#changelog">Changelog</a>
@@ -58,102 +57,115 @@
     </header>
 
     <main>
-      <section class="hero" id="app">
-        <div class="container hero-grid">
+      <section class="hero" id="hero">
+        <div class="container hero-layout">
           <div class="hero-copy">
-            <h1>LeafCheck your sustainability claims in seconds</h1>
-            <p class="one-liner">
-              Upload a creative, run OCR + GPT, and get actionable risk signals
-              instantly.
+            <p class="eyebrow">AI-Powered Compliance Guardrails</p>
+            <h1>AI Greenwashing Detector</h1>
+            <p class="hero-subtitle">
+              Instant GPT reviews for environmental claims.
             </p>
             <ul class="hero-points">
-              <li>Conservative EU-style greenwashing review</li>
-              <li>Transparent reasoning you can share with teams</li>
-              <li>Downloadable PDF evidence pack</li>
+              <li>Conservative, EU-style risk scoring in seconds</li>
+              <li>Transparent reasoning you can share with stakeholders</li>
+              <li>Downloadable PDF evidence packs for audits</li>
             </ul>
           </div>
-          <div class="card analysis-card" aria-live="polite">
-            <form id="analyze-form">
-              <label for="creative-input" class="input-label"
-                >Upload an ad image or PDF</label
-              >
-              <div class="file-drop" id="file-drop">
-                <input
-                  type="file"
-                  id="creative-input"
-                  accept="image/*,application/pdf"
-                  required
-                />
-                <p id="file-name" class="file-name">No file selected</p>
-                <p class="file-hint">JPEG, PNG, or PDF up to 10 MB</p>
+          <div class="hero-panel" aria-live="polite">
+            <input
+              type="file"
+              id="fileInput"
+              accept="image/png,image/jpeg"
+              hidden
+            />
+            <div
+              class="dropzone"
+              id="dropzone"
+              role="button"
+              tabindex="0"
+              aria-describedby="dropzone-help"
+            >
+              <div class="drop-icon" aria-hidden="true">
+                <svg width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="1" y="1" width="50" height="50" rx="16" fill="#F1F7F3" stroke="#D9E8DE" />
+                  <path d="M26 16v20" stroke="#5EA476" stroke-width="3" stroke-linecap="round" />
+                  <path d="M16 26h20" stroke="#5EA476" stroke-width="3" stroke-linecap="round" />
+                </svg>
               </div>
-              <div class="actions">
-                <button type="submit" class="btn btn-primary" id="analyze-btn">
-                  Analyze with AI
-                </button>
-                <button
-                  type="button"
-                  class="btn btn-secondary"
-                  id="download-report"
-                  disabled
-                >
-                  Download PDF
-                </button>
-              </div>
-              <div
-                id="status-message"
-                class="status-message"
-                role="status"
-                aria-live="polite"
-              ></div>
-            </form>
-            <div id="analysis-results" class="analysis-results hidden">
-              <div class="score-row">
-                <span class="score-value" id="score-value">0</span>
-                <span class="level-badge level-low" id="level-badge"
-                  >Low risk</span
-                >
-              </div>
-              <div class="score-meter" aria-hidden="true">
-                <div
-                  class="score-fill level-low"
-                  id="score-fill"
-                  style="width: 0%"
-                ></div>
-              </div>
-              <div class="reasons-block">
-                <h3>Why it matters</h3>
-                <ul id="reasons-list" class="reasons-list"></ul>
-              </div>
-              <div class="ocr-block">
-                <h3>Detected copy</h3>
-                <pre id="ocr-text" class="ocr-text">
-Upload an asset to preview the extracted text.</pre
-                >
-              </div>
+              <h2>Drop your sustainability creative</h2>
+              <p id="dropzone-help">Drag and drop a JPG or PNG, or</p>
+              <button type="button" class="btn-primary browse-btn">Browse files</button>
+              <p class="file-hint">We keep your upload local to this session.</p>
             </div>
+            <section id="progress" class="progress-card" hidden>
+              <div class="spinner" role="presentation"></div>
+              <p class="progress-title">Analyzing your creative…</p>
+              <p class="progress-subtitle">Running OCR and GPT-powered checks.</p>
+              <div class="steps" role="list">
+                <span role="listitem" data-step="ocr">OCR</span>
+                <span role="listitem" data-step="detect">Claim Detection</span>
+                <span role="listitem" data-step="score">Risk Scoring</span>
+                <span role="listitem" data-step="report">Report Building</span>
+              </div>
+            </section>
           </div>
         </div>
       </section>
 
       <section id="features" class="features">
         <div class="container">
-          <h2>Features</h2>
+          <h2>Built for sustainability and compliance teams</h2>
           <div class="grid">
             <div class="card">
               <span class="material-symbols-outlined">assessment</span>
               <h3>GPT-first risk scoring</h3>
-              <p>Conservative, EU-style guidance while we iterate on rules.</p>
+              <p>Conservative guidance aligned with emerging EU benchmarks.</p>
             </div>
             <div class="card">
               <span class="material-symbols-outlined">auto_awesome</span>
               <h3>Clear rationale</h3>
-              <p>Concise bullets you can hand to copywriters and compliance.</p>
+              <p>Concise triggers you can hand to copywriters and counsel.</p>
             </div>
             <div class="card">
               <span class="material-symbols-outlined">workspace_premium</span>
               <h3>Downloadable evidence</h3>
-              <p>PDF with GPT judgement, OCR text, and next steps.</p>
+              <p>PDF summary with extracted copy and AI judgement.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="results" class="results" hidden>
+        <div class="container results-card">
+          <div class="results-grid">
+            <div class="score-column">
+              <div id="scoreDonut" class="donut" aria-hidden="true"></div>
+              <div class="score-copy">
+                <p class="score-label">Overall score</p>
+                <p id="scoreText" class="score-value">0 / 100</p>
+                <p id="levelText" class="score-level">Low</p>
+                <p id="scoreMessage" class="score-message">
+                  Upload a creative to see your greenwashing risk.
+                </p>
+              </div>
+            </div>
+            <div class="insights-column">
+              <div class="insight-block">
+                <h3>Key triggers identified</h3>
+                <ul id="triggers" class="insight-list"></ul>
+              </div>
+              <div class="insight-block">
+                <h3>How to improve</h3>
+                <ul id="improvements" class="insight-list"></ul>
+              </div>
+              <div class="result-actions">
+                <button id="pdfBtn" class="btn-primary" type="button">
+                  Download Report (PDF)
+                </button>
+                <button id="retryBtn" class="btn-ghost" type="button">
+                  Re-analyze another ad
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -162,22 +174,22 @@ Upload an asset to preview the extracted text.</pre
       <section id="how-it-works" class="how-it-works">
         <div class="container">
           <h2>How it works</h2>
-          <div class="steps">
+          <div class="steps-illustration">
             <div class="step">
               <div class="step-number">1</div>
-              <p>Upload</p>
+              <p>Upload creative</p>
             </div>
             <div class="step">
               <div class="step-number">2</div>
-              <p>OCR</p>
+              <p>OCR + Claim detection</p>
             </div>
             <div class="step">
               <div class="step-number">3</div>
-              <p>GPT review</p>
+              <p>GPT risk scoring</p>
             </div>
             <div class="step">
               <div class="step-number">4</div>
-              <p>PDF + Feedback</p>
+              <p>Shareable PDF</p>
             </div>
           </div>
         </div>
@@ -188,8 +200,10 @@ Upload an asset to preview the extracted text.</pre
           <h2>Changelog / Updates</h2>
           <ul>
             <li>
-              <strong>v1.0.0 (2024-11-04):</strong> Initial release of the
-              LeafCheck landing page.
+              <strong>v1.1.0 (2024-11-07):</strong> Introduced drag-and-drop hero, staged analysis progress, and refreshed results layout.
+            </li>
+            <li>
+              <strong>v1.0.0 (2024-11-04):</strong> Initial release of the LeafCheck landing page.
             </li>
           </ul>
         </div>
@@ -197,7 +211,7 @@ Upload an asset to preview the extracted text.</pre
 
       <section class="trust-legal">
         <div class="container">
-          <h2>Trust & Legal</h2>
+          <h2>Trust &amp; Legal</h2>
           <p>
             Your data is processed locally and never stored on our servers. For
             more information, please see our privacy policy.
