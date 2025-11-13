@@ -1,11 +1,21 @@
 import os
 import json
-from openai import OpenAI
 from typing import Dict, Any
 
-# It's better to load the API key once and reuse the client
-# The API key can be set as an environment variable
-client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+from openai import OpenAI
+from dotenv import load_dotenv
+
+# Load environment variables from .env if present (no-op if missing)
+load_dotenv()
+
+def _get_client() -> OpenAI:
+    """Create an OpenAI client lazily and fail with a clear message if the key is missing."""
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        raise RuntimeError(
+            "OPENAI_API_KEY is not set. Create a .env with OPENAI_API_KEY=... or export it in your shell."
+        )
+    return OpenAI(api_key=api_key)
 
 SYSTEM_PROMPT = """
 You are an expert in greenwashing detection, tasked with analyzing marketing materials based on EU regulations.
@@ -32,6 +42,7 @@ def analyze_text_with_gpt(text: str) -> Dict[str, Any]:
         return {"risk_score": 0, "level": "Low", "reasons": ["No text provided for analysis."]}
 
     try:
+        client = _get_client()
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
@@ -52,9 +63,12 @@ def analyze_text_with_gpt(text: str) -> Dict[str, Any]:
         return result
 
     except Exception as e:
+        # Keep server running; surface a clear reason in the result
         print(f"Error during GPT analysis: {e}")
         return {
             "risk_score": 0,
             "level": "Low",
-            "reasons": ["An error occurred during AI analysis."],
+            "reasons": [
+                "AI analysis skipped due to configuration error. Ensure OPENAI_API_KEY is set.",
+            ],
         }

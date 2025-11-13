@@ -1,5 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
+
+# Load environment variables early so downstream imports (e.g., OpenAI client) see them
+load_dotenv()
+
 from src.app.routers.analysis import router as analysis_router
 
 app = FastAPI(title="GreenCheck API", version="2.0.0")
