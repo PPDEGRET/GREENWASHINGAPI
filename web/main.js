@@ -61,8 +61,14 @@ document.addEventListener("DOMContentLoaded", () => {
         drawDonut(data.score);
         ui.riskLevel.textContent = data.level;
         ui.triggersList.innerHTML = data.reasons.map(reason => `<li>${reason}</li>`).join('');
-        // Placeholder for improvements
-        ui.improvementsList.innerHTML = `<li>Be more specific in your claims.</li><li>Provide third-party certifications.</li>`;
+
+        // Dynamic recommendations provided by the API
+        ui.improvementsList.innerHTML = "";
+        (data.recommendations || []).forEach(rec => {
+            const li = document.createElement("li");
+            li.textContent = rec;
+            ui.improvementsList.appendChild(li);
+        });
     };
 
     const drawDonut = (score) => {
