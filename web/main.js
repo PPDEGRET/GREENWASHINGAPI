@@ -1,49 +1,101 @@
-const API_BASE = "http://localhost:8000"; // change for prod
+const API_BASE = window.API_BASE || "http://localhost:8000";
 
-let lastFile = null;
-const progressTimers = [];
-
-const els = {
-  drop: document.getElementById("dropzone"),
-  input: document.getElementById("fileInput"),
-  progress: document.getElementById("progress"),
-  results: document.getElementById("results"),
-  scoreDonut: document.getElementById("scoreDonut"),
-  scoreText: document.getElementById("scoreText"),
-  levelText: document.getElementById("levelText"),
-  scoreMessage: document.getElementById("scoreMessage"),
-  triggers: document.getElementById("triggers"),
-  improvements: document.getElementById("improvements"),
-  pdfBtn: document.getElementById("pdfBtn"),
-  retryBtn: document.getElementById("retryBtn"),
-  stepEls: Array.from(document.querySelectorAll("[data-step]")),
-};
-
-function show(el) {
-  if (el) {
-    el.removeAttribute("hidden");
+async function analyzeImage(file) {
+  const form = new FormData();
+  form.append("file", file);
+  const response = await fetch(`${API_BASE}/analyze`, {
+    method: "POST",
+    body: form,
+  });
+  if (!response.ok) {
+    throw new Error(`Analyze failed (${response.status})`);
   }
+  return await response.json();
 }
 
-function hide(el) {
-  if (el) {
-    el.setAttribute("hidden", "");
+async function downloadReport(file) {
+  const form = new FormData();
+  form.append("file", file);
+  const response = await fetch(`${API_BASE}/report.pdf`, {
+    method: "POST",
+    body: form,
+  });
+  if (!response.ok) {
+    throw new Error(`Report failed (${response.status})`);
   }
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "LeafCheck_Report.pdf";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }
 
-function clearProgressTimers() {
-  while (progressTimers.length) {
-    const timer = progressTimers.pop();
-    clearTimeout(timer);
-  }
-}
+document.addEventListener("DOMContentLoaded", () => {
+  const form = document.getElementById("analyze-form");
+  const fileInput = document.getElementById("creative-input");
+  const analyzeBtn = document.getElementById("analyze-btn");
+  const downloadBtn = document.getElementById("download-report");
+  const statusMessage = document.getElementById("status-message");
+  const fileNameEl = document.getElementById("file-name");
+  const resultsEl = document.getElementById("analysis-results");
+  const scoreValue = document.getElementById("score-value");
+  const levelBadge = document.getElementById("level-badge");
+  const scoreFill = document.getElementById("score-fill");
+  const reasonsList = document.getElementById("reasons-list");
+  const ocrText = document.getElementById("ocr-text");
 
-function setActiveStep(index) {
-  els.stepEls.forEach((node, idx) => {
-    if (index >= 0 && idx <= index) {
-      node.classList.add("active");
+  let lastFile = null;
+
+  const setStatus = (message, variant) => {
+    statusMessage.textContent = message || "";
+    statusMessage.classList.remove("error", "success");
+    if (variant === "error") {
+      statusMessage.classList.add("error");
+    } else if (variant === "success") {
+      statusMessage.classList.add("success");
+    }
+  };
+
+  const resetResults = () => {
+    resultsEl.classList.add("hidden");
+    reasonsList.innerHTML = "";
+    ocrText.textContent = "Upload an asset to preview the extracted text.";
+    scoreValue.textContent = "0";
+    levelBadge.textContent = "Low risk";
+    levelBadge.className = "level-badge level-low";
+    scoreFill.style.width = "0%";
+    scoreFill.className = "score-fill level-low";
+    downloadBtn.disabled = true;
+  };
+
+  const renderResults = (data) => {
+    const score = Math.max(0, Math.min(100, Number(data.score) || 0));
+    const level = String(data.level || "Low");
+    const levelKey = level.toLowerCase();
+    const reasons = Array.isArray(data.reasons) ? data.reasons : [];
+    const text = data.text || "";
+
+    scoreValue.textContent = score.toString();
+    levelBadge.textContent = `${level} risk`;
+    levelBadge.className = `level-badge level-${levelKey}`;
+    scoreFill.style.width = `${score}%`;
+    scoreFill.className = `score-fill level-${levelKey}`;
+
+    reasonsList.innerHTML = "";
+    if (reasons.length === 0) {
+      const li = document.createElement("li");
+      li.textContent = "No high-risk claims detected.";
+      reasonsList.appendChild(li);
     } else {
-      node.classList.remove("active");
+      reasons.forEach((reason) => {
+        const li = document.createElement("li");
+        li.textContent = reason;
+        reasonsList.appendChild(li);
+      });
     }
   });
 }
@@ -164,122 +216,63 @@ async function downloadReport(file) {
   URL.revokeObjectURL(url);
 }
 
-function isSupportedImage(file) {
-  if (!file) return false;
-  const mime = file.type || "";
-  const name = file.name || "";
-  const mimeMatch = /image\/(png|jpe?g)/i.test(mime);
-  const extMatch = /\.(png|jpe?g)$/i.test(name);
-  return mimeMatch || extMatch;
-}
+    ocrText.textContent = text ? text : "OCR did not detect any text.";
 
-function handleFiles(fileList) {
-  const file = fileList && fileList[0];
-  if (!file) return;
-  if (!isSupportedImage(file)) {
-    window.alert("Please upload a JPG or PNG image.");
-    return;
-  }
-  lastFile = file;
-  hide(els.results);
-  els.drop.classList.add("is-hidden");
-  show(els.progress);
-  clearProgressTimers();
-  setActiveStep(0);
-  queueStep(1, 700);
-  (async () => {
-    try {
-      const data = await analyzeImage(file);
-      clearProgressTimers();
-      setActiveStep(2);
-      renderResults(data);
-      hide(els.progress);
-      show(els.results);
-      window.setTimeout(() => {
-        els.results.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 150);
-    } catch (error) {
-      console.error(error);
-      window.alert("Analysis failed. Please try again.");
-      resetUI();
-    }
-  })();
-}
+    resultsEl.classList.remove("hidden");
+    downloadBtn.disabled = false;
+  };
 
-function setupDropzone() {
-  if (!els.drop || !els.input) return;
-  const browseButtons = els.drop.querySelectorAll(".browse-btn");
-  browseButtons.forEach((btn) => {
-    btn.addEventListener("click", (event) => {
-      event.stopPropagation();
-      els.input.click();
-    });
+  resetResults();
+
+  fileInput.addEventListener("change", () => {
+    const [file] = fileInput.files;
+    lastFile = file || null;
+    fileNameEl.textContent = file ? file.name : "No file selected";
+    setStatus("", "");
+    resetResults();
   });
 
-  els.drop.addEventListener("click", () => {
-    els.input.click();
-  });
-
-  els.drop.addEventListener("keydown", (event) => {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      els.input.click();
-    }
-  });
-
-  els.drop.addEventListener("dragover", (event) => {
+  form.addEventListener("submit", async (event) => {
     event.preventDefault();
-    els.drop.classList.add("dragover");
-  });
-
-  els.drop.addEventListener("dragleave", () => {
-    els.drop.classList.remove("dragover");
-  });
-
-  els.drop.addEventListener("drop", (event) => {
-    event.preventDefault();
-    els.drop.classList.remove("dragover");
-    handleFiles(event.dataTransfer.files);
-  });
-
-  els.input.addEventListener("change", (event) => {
-    handleFiles(event.target.files);
-    event.target.value = "";
-  });
-}
-
-function setupActions() {
-  els.pdfBtn.addEventListener("click", async () => {
     if (!lastFile) {
-      window.alert("Upload an image before downloading a report.");
+      setStatus("Select an image or PDF before running the analysis.", "error");
       return;
     }
-    const original = els.pdfBtn.textContent;
-    els.pdfBtn.disabled = true;
-    els.pdfBtn.textContent = "Preparing report…";
+
+    analyzeBtn.disabled = true;
+    analyzeBtn.textContent = "Analyzing...";
+    setStatus("Running OCR and GPT review...", "");
     try {
-      await downloadReport(lastFile);
+      const result = await analyzeImage(lastFile);
+      renderResults(result);
+      setStatus("Analysis ready.", "success");
     } catch (error) {
       console.error(error);
-      window.alert("Report download failed. Please try again.");
+      setStatus(error.message || "Unable to analyze the asset.", "error");
     } finally {
-      els.pdfBtn.textContent = original;
-      els.pdfBtn.disabled = false;
+      analyzeBtn.disabled = false;
+      analyzeBtn.textContent = "Analyze with AI";
     }
   });
 
-  els.retryBtn.addEventListener("click", () => {
-    resetUI();
+  downloadBtn.addEventListener("click", async () => {
+    if (!lastFile) {
+      setStatus("Upload an asset before downloading a report.", "error");
+      return;
+    }
+    downloadBtn.disabled = true;
+    const originalText = downloadBtn.textContent;
+    downloadBtn.textContent = "Preparing...";
+    setStatus("Generating PDF report...", "");
+    try {
+      await downloadReport(lastFile);
+      setStatus("Report downloaded.", "success");
+    } catch (error) {
+      console.error(error);
+      setStatus(error.message || "Unable to download the report.", "error");
+    } finally {
+      downloadBtn.disabled = false;
+      downloadBtn.textContent = originalText;
+    }
   });
-}
-
-function init() {
-  drawDonut(0);
-  resetResultsContent();
-  hide(els.progress);
-  hide(els.results);
-  setupDropzone();
-  setupActions();
-}
-
-init();
+});
