@@ -20,13 +20,25 @@ class TestGetClient:
             
             assert "OPENAI_API_KEY is not set" in str(exc_info.value)
     
-    def test_get_client_returns_openai_instance_when_api_key_present(self):
-        """Test case 2: Verify that _get_client() returns an OpenAI client instance if OPENAI_API_KEY is defined."""
+    @patch('src.app.services.gpt_service.OpenAI')
+    def test_get_client_returns_openai_instance_when_api_key_present(self, mock_openai):
+        """
+        Test case 2: Verify that _get_client() returns an OpenAI client instance
+        if OPENAI_API_KEY is defined.
+        """
+        # Configure the mock to have an api_key attribute
+        mock_instance = MagicMock()
+        mock_instance.api_key = "test-api-key-12345"
+        mock_openai.return_value = mock_instance
+
         with patch.dict(os.environ, {"OPENAI_API_KEY": "test-api-key-12345"}):
             client = _get_client()
             
-            assert isinstance(client, OpenAI)
-            assert client.api_key == "test-api-key-12345"
+            # Verify that the OpenAI class was instantiated with the correct API key
+            mock_openai.assert_called_once_with(api_key="test-api-key-12345")
+
+            # Verify that the returned client is the mocked instance
+            assert client is mock_instance
 
 
 class TestAnalyzeTextWithGPT:
