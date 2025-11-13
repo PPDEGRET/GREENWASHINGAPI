@@ -60,11 +60,24 @@ document.addEventListener("DOMContentLoaded", () => {
     const renderResults = (data) => {
         drawDonut(data.score);
         ui.riskLevel.textContent = data.level;
-        ui.triggersList.innerHTML = data.reasons.map(reason => `<li>${reason}</li>`).join('');
+        ui.triggersList.innerHTML = (data.reasons || []).map(reason => `<li>${reason}</li>`).join('');
 
-        // Dynamic recommendations provided by the API
+        // Use GPT-backed recommendations when the field is present. Only fall
+        // back to static placeholders when talking to an older backend that
+        // doesn't send any `recommendations` field at all.
+        let recs = [];
+        if (Object.prototype.hasOwnProperty.call(data, "recommendations")) {
+            recs = Array.isArray(data.recommendations) ? data.recommendations : [];
+        } else {
+            recs = [
+                "Clarify the environmental claim with scope and metrics.",
+                "Provide external certifications or third-party verification.",
+                "Avoid absolute expressions such as '100% sustainable'.",
+            ];
+        }
+
         ui.improvementsList.innerHTML = "";
-        (data.recommendations || []).forEach(rec => {
+        recs.forEach(rec => {
             const li = document.createElement("li");
             li.textContent = rec;
             ui.improvementsList.appendChild(li);

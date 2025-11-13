@@ -9,13 +9,12 @@ def analyze_image(image_bytes: bytes) -> Dict[str, Any]:
     extracted_text = extract_text_from_image(image_bytes)
     gpt_analysis = analyze_text_with_gpt(extracted_text)
 
-    # Placeholder recommendations for this iteration. In a future version, this can
-    # be driven by rule-based triggers and/or richer LLM output.
-    recommendations = [
-        "Clarify the environmental claim with scope and metrics.",
-        "Provide external certifications or third-party verification.",
-        "Avoid absolute expressions such as '100% sustainable'.",
-    ]
+    # Use recommendations coming from the GPT analysis when available. If the
+    # model did not return any, expose an empty list rather than static
+    # placeholders so the frontend can decide how to handle it.
+    recommendations = gpt_analysis.get("recommendations")
+    if not isinstance(recommendations, list):
+        recommendations = []
 
     return {
         "text": extracted_text,

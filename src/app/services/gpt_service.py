@@ -25,8 +25,13 @@ You must return a JSON object with the following schema:
 {
   "risk_score": "integer (0-100)",
   "level": "'Low' or 'Medium' or 'High'",
-  "reasons": "[string, ...]"
+  "reasons": "[string, ...]",
+  "recommendations": "[string, ...]"
 }
+
+Where:
+- "reasons" explains WHY the text may be greenwashing (or not), in short bullet-style statements.
+- "recommendations" gives concrete suggestions to improve the ad and reduce greenwashing risk.
 
 Scoring guide:
 - 0-30 (Low): Claims are specific, verifiable, and backed by evidence.
@@ -59,6 +64,7 @@ def analyze_text_with_gpt(text: str) -> Dict[str, Any]:
         result["risk_score"] = int(result.get("risk_score", 0))
         result["level"] = result.get("level", "Low")
         result["reasons"] = result.get("reasons", [])
+        result["recommendations"] = result.get("recommendations", [])
 
         return result
 
