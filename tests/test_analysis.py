@@ -1,8 +1,8 @@
 import pytest
 from fastapi.testclient import TestClient
 from unittest.mock import patch
-from src.app.main import app  # Assuming your FastAPI app instance is in main
-from src.app.schemas.analysis import AnalysisResponse, RecommendationItem
+from src.app.main import app
+from src.app.schemas.analysis import AnalysisResponse, RuleMatch, GPTAnalysis
 
 @pytest.fixture
 def client():
@@ -13,46 +13,48 @@ def test_analyze_image_endpoint_success(client):
     Tests the /analyze endpoint with a mock analysis service to ensure it
     returns the expected structured response.
     """
-    # Mock the entire analysis_service.analyze_image function
-    mock_recommendation = RecommendationItem(
-        type="avoid_absolute",
-        message="Avoid absolute environmental claims...",
-        severity=3,
-        triggered_by=["superlatives"]
-    )
-    mock_analysis_result = AnalysisResponse(
-        score=85,
-        level="High",
-        reasons=["Vague language used."],
-        text="Eco-friendly product 100% sustainable.",
-        recommendations=[mock_recommendation]
-    )
+    mock_analysis_result = {
+        "score": 52,
+        "level": "Medium",
+        "reasons": ["Misleading Terminology"],
+        "recommendations": ["Avoid absolute terms..."],
+        "rule_matches": [
+            {
+                "rule_id": "rule_001",
+                "category": "Misleading Terminology",
+                "severity": "High",
+                "matched_text": "eco-friendly",
+                "recommendation": "Avoid absolute terms..."
+            }
+        ],
+        "gpt_analysis": {
+            "risk_score": 70,
+            "level": "Medium",
+            "reasons": ["GPT reason"],
+            "subtle_triggers": [],
+            "recommendations": ["GPT recommendation"]
+        }
+    }
 
-    with patch('src.app.routers.analysis.analyze_image', return_value=mock_analysis_result) as mock_analyze, \
-         patch('src.app.services.usage_service.can_perform_analysis', return_value=True) as mock_can_perform, \
-         patch('src.app.services.usage_service.log_analysis') as mock_log:
-        # Use a dummy file for the upload
+    with patch('src.app.routers.analysis.analysis_service.analyze_image', return_value=mock_analysis_result) as mock_analyze, \
+         patch('src.app.services.usage_service.can_perform_analysis', return_value=True), \
+         patch('src.app.services.usage_service.log_analysis'):
+
         dummy_file = ("test.png", b"fake-image-bytes", "image/png")
-
         response = client.post("/api/v1/analyze", files={"file": dummy_file})
 
-        # Assertions
         assert response.status_code == 200
         json_response = response.json()
 
-        assert json_response["score"] == 85
-        assert json_response["level"] == "High"
-        assert "Vague language used." in json_response["reasons"]
-        assert "recommendations" in json_response
-        assert len(json_response["recommendations"]) == 1
+        assert json_response["score"] == 52
+        assert json_response["level"] == "Medium"
+        assert "Misleading Terminology" in json_response["reasons"]
+        assert "rule_matches" in json_response
+        assert len(json_response["rule_matches"]) == 1
+        assert json_response["rule_matches"][0]["rule_id"] == "rule_001"
+        assert "gpt_analysis" in json_response
+        assert json_response["gpt_analysis"]["risk_score"] == 70
 
-        # Verify the structure of the recommendation item
-        recommendation = json_response["recommendations"][0]
-        assert recommendation["type"] == "avoid_absolute"
-        assert recommendation["severity"] == 3
-        assert "superlatives" in recommendation["triggered_by"]
-
-        # Ensure the mocked service was called
         mock_analyze.assert_called_once()
 
 def test_analyze_image_endpoint_not_image(client):

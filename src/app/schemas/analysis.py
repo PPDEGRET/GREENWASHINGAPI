@@ -1,19 +1,24 @@
 from pydantic import BaseModel, Field
-from typing import List
+from typing import List, Dict, Any
 
-class AnalysisRequest(BaseModel):
-    file: bytes
+class RuleMatch(BaseModel):
+    rule_id: str
+    category: str
+    severity: str
+    matched_text: str
+    recommendation: str
 
-class RecommendationItem(BaseModel):
-    type: str = Field(..., example="clarity")
-    message: str = Field(..., example="Avoid vague terms like 'eco-friendly'.")
-    severity: int = Field(..., ge=1, le=3, example=2)
-    triggered_by: List[str] = Field(..., example=["superlatives"])
-
+class GPTAnalysis(BaseModel):
+    risk_score: int
+    level: str
+    reasons: List[str]
+    subtle_triggers: List[str]
+    recommendations: List[str]
 
 class AnalysisResponse(BaseModel):
     score: int = Field(..., example=85)
     level: str = Field(..., example="High")
     reasons: List[str] = Field(..., example=["Vague language used.", "Lack of specific data."])
-    text: str = Field(..., example="This is the extracted text from the ad.")
-    recommendations: List[RecommendationItem] = Field(default_factory=list)
+    recommendations: List[str] = Field(..., example=["Provide specific data to back up your claims."])
+    rule_matches: List[RuleMatch] = Field(..., description="Matches from the rule-based engine.")
+    gpt_analysis: GPTAnalysis = Field(..., description="Analysis from the GPT model.")

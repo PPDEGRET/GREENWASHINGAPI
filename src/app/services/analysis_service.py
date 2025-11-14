@@ -1,70 +1,83 @@
-from typing import List, Set, Optional
+# src/app/services/analysis_service.py
+from typing import Any, Dict, List
+from .rules_engine import rules_engine
+from .ocr_service import extract_text_from_image
+from .gpt_service import analyze_text_with_gpt
 
-from src.app.services.ocr_service import extract_text_from_image
-from src.app.services.gpt_service import analyze_text_with_gpt
-from src.app.services.recommendation_engine import RecommendationEngine
-from src.app.schemas.analysis import AnalysisResponse, RecommendationItem
-from src.app.models.user import User
+class AnalysisService:
+    def __init__(self, rules_engine):
+        self.rules_engine = rules_engine
 
-# Instantiate the engine once to be reused in all analyses
-recommendation_engine = RecommendationEngine()
+    def analyze_image(self, image_bytes: bytes) -> Dict[str, Any]:
+        """
+        Refactored analysis pipeline with distinct stages.
+        """
+        # Stage 1: OCR
+        ocr_text = extract_text_from_image(image_bytes)
 
-def _deduplicate_recommendations(recommendations: List[RecommendationItem]) -> List[RecommendationItem]:
-    """Deduplicate recommendations by their message text while preserving order."""
-    seen: Set[str] = set()
-    deduped: List[RecommendationItem] = []
-    for rec in recommendations:
-        if rec.message in seen:
-            continue
-        seen.add(rec.message)
-        deduped.append(rec)
-    return deduped
+        # Stage 2: Claim Extraction (for now, we'll treat the whole text as a single claim)
+        claims = self._extract_claims(ocr_text)
 
-def analyze_image(image_bytes: bytes, user: Optional[User] = None) -> AnalysisResponse:
-    """Orchestrate OCR, GPT analysis, rule-based analysis, and recommendation generation.
+        # Stage 3: Scoring (Rule-based and GPT)
+        rule_matches = self._score_with_rules(claims)
+        gpt_analysis = self._score_with_gpt(claims)
 
-    `user` is optional to support anonymous analysis; when absent, GPT uses a generic
-    system prompt without personalization.
-    """
-    # 1. Extract text from the image
-    extracted_text = extract_text_from_image(image_bytes)
+        # Stage 4: Aggregation
+        final_result = self._aggregate_results(rule_matches, gpt_analysis)
 
-    # 2. Get GPT analysis (score, reasons, subtle triggers, and GPT recommendations)
-    gpt_analysis = analyze_text_with_gpt(extracted_text, user)
+        return final_result
 
-    # 3. Detect deterministic triggers from the text
-    rule_based_triggers = recommendation_engine.detect_rule_based_triggers(extracted_text)
+    def _extract_claims(self, text: str) -> List[str]:
+        # Placeholder for a more sophisticated claim extraction logic.
+        # For now, we'll just split the text into sentences.
+        return [sentence.strip() for sentence in text.split('.') if sentence.strip()]
 
-    # 4. Combine all triggers (rule-based and GPT-based)
-    all_triggers = list(set(rule_based_triggers + gpt_analysis.get("subtle_triggers", [])))
+    def _score_with_rules(self, claims: List[str]) -> List[Dict[str, Any]]:
+        all_matches = []
+        for claim in claims:
+            all_matches.extend(self.rules_engine.apply(claim))
+        return all_matches
 
-    # 5. Generate rule-based recommendations from combined triggers
-    rule_based_recs = recommendation_engine.generate_recommendations(all_triggers)
+    def _score_with_gpt(self, claims: List[str]) -> Dict[str, Any]:
+        # Placeholder for GPT-based scoring of each claim.
+        # For now, we'll just send the whole text to the GPT service.
+        full_text = " ".join(claims)
+        return analyze_text_with_gpt(full_text)
 
-    # 6. Convert GPT recommendations (plain strings) into RecommendationItem objects
-    gpt_rec_messages = gpt_analysis.get("recommendations", []) or []
-    gpt_triggers = gpt_analysis.get("subtle_triggers", []) or []
-    gpt_recs: List[RecommendationItem] = []
-    for msg in gpt_rec_messages:
-        if not msg:
-            continue
-        gpt_recs.append(
-            RecommendationItem(
-                type="gpt_insight",
-                message=str(msg),
-                severity=2,
-                triggered_by=gpt_triggers,
-            )
-        )
+    def _aggregate_results(self, rule_matches: List[Dict[str, Any]], gpt_analysis: Dict[str, Any]) -> Dict[str, Any]:
+        # Placeholder for a more sophisticated aggregation logic.
 
-    # 7. Merge and deduplicate recommendations (rule-based + GPT)
-    combined_recs = _deduplicate_recommendations(rule_based_recs + gpt_recs)
+        # Combine reasons and recommendations
+        reasons = list(set([match["category"] for match in rule_matches] + gpt_analysis.get("reasons", [])))
+        recommendations = list(set([match["recommendation"] for match in rule_matches] + gpt_analysis.get("recommendations", [])))
 
-    # 8. Construct the final response object
-    return AnalysisResponse(
-        text=extracted_text,
-        score=gpt_analysis.get("risk_score"),
-        level=gpt_analysis.get("level"),
-        reasons=gpt_analysis.get("reasons"),
-        recommendations=combined_recs,
-    )
+        # Simple score aggregation
+        rule_score = sum(10 for match in rule_matches) # simplified scoring
+        final_score = self._combine_scores(rule_score, gpt_analysis.get("risk_score"))
+
+        return {
+            "score": final_score,
+            "level": self._get_risk_level(final_score),
+            "reasons": reasons,
+            "recommendations": recommendations,
+            "rule_matches": rule_matches,
+            "gpt_analysis": gpt_analysis,
+        }
+
+    def _combine_scores(self, rule_score: int, llm_score: int) -> int:
+        """Combine GreenCheck rule score with an LLM judge score."""
+        if llm_score is None:
+            return rule_score
+        # Weighted average, giving more weight to the LLM
+        return int(rule_score * 0.3 + llm_score * 0.7)
+
+    def _get_risk_level(self, score: int) -> str:
+        """Convert a numeric score to a risk level."""
+        if score >= 75:
+            return "High"
+        if score >= 40:
+            return "Medium"
+        return "Low"
+
+# Singleton instance
+analysis_service = AnalysisService(rules_engine)

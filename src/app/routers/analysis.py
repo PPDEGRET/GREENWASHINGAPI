@@ -5,7 +5,7 @@ from src.app.models.user import User
 from src.app.auth.dependencies import get_optional_current_user
 from src.app.services import usage_service
 import time
-from src.app.services.analysis_service import analyze_image
+from src.app.services.analysis_service import analysis_service  # Updated import
 from src.app.services.pdf_service import PDFService
 import io
 from typing import Any
@@ -40,18 +40,18 @@ async def analyze_image_endpoint(
     if not image_bytes:
         raise HTTPException(status_code=400, detail="Uploaded file is empty.")
 
-    analysis_results = analyze_image(image_bytes, user)
+    analysis_results = analysis_service.analyze_image(image_bytes)  # Use the service instance
 
-    duration_ms = int((time.time() - start_time) * 1000)
+    duration_ms = int((time.time() * 1000) - (start_time * 1000))
     await usage_service.log_analysis(
         input_type="image",
-        result_json=analysis_results.model_dump(),
+        result_json=analysis_results,
         duration_ms=duration_ms,
         user=user,
         ip_address=ip_address,
     )
 
-    return analysis_results
+    return AnalysisResponse(**analysis_results)
 
 
 @router.post("/report.pdf")
@@ -64,16 +64,10 @@ async def generate_report_endpoint(file: UploadFile = File(...)):
     if not image_bytes:
         raise HTTPException(status_code=400, detail="Uploaded file is empty.")
 
-    analysis_results = analyze_image(image_bytes)
+    analysis_results = analysis_service.analyze_image(image_bytes)
 
-    # PDFService expects a dict-like object (uses `.get`); normalize here.
-    analysis_data: Any
-    if hasattr(analysis_results, "model_dump"):
-        analysis_data = analysis_results.model_dump()
-    elif hasattr(analysis_results, "dict"):
-        analysis_data = analysis_results.dict()
-    else:
-        analysis_data = analysis_results
+    # PDFService expects a dict-like object
+    analysis_data = analysis_results
 
     pdf_service = PDFService(image_bytes, analysis_data)
     pdf_bytes, filename = pdf_service.generate_report()

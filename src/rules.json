@@ -1,0 +1,23 @@
+[
+  {
+    "id": "rule_001",
+    "category": "Misleading Terminology",
+    "pattern": "\\b(100% natural|eco-friendly|earth-friendly)\\b",
+    "severity": "High",
+    "recommendation": "Avoid absolute terms. Quantify the environmental benefit (e.g., 'made with 50% recycled materials')."
+  },
+  {
+    "id": "rule_002",
+    "category": "Vague Claims",
+    "pattern": "\\b(sustainable|green|conscious)\\b",
+    "severity": "Medium",
+    "recommendation": "Specify the sustainable practice. For example, instead of 'green', say 'packaging is biodegradable'."
+  },
+  {
+    "id": "rule_003",
+    "category": "Irrelevant Imagery",
+    "pattern": "\\b(image of a pristine forest|leaf icon)\\b",
+    "severity": "Low",
+    "recommendation": "Ensure imagery is directly related to the product's environmental benefit."
+  }
+]
