@@ -50,7 +50,31 @@ Scoring guide:
 - 71-100 (High): Claims are misleading, rely on emotional appeals without proof, or omit critical information.
 """
 
-def analyze_text_with_gpt(text: str) -> Dict[str, Any]:
+from src.app.models.user import User
+
+def _build_personalized_prompt(user: User) -> str:
+    """Build a personalized system prompt based on user data."""
+    prompt = SYSTEM_PROMPT
+
+    prompt += "\n\n--- User Profile for Personalization ---\n"
+    if user.sector:
+        prompt += f"Industry Sector: {user.sector}\n"
+        if "cosmetics" in user.sector.lower():
+            prompt += "Focus: Pay special attention to the Green Claims Directive and rules on 'clean beauty' or 'natural' allegations.\n"
+    if user.company_size:
+        prompt += f"Company Size: {user.company_size}\n"
+        if user.company_size in ["50-250", "250+"]:
+            prompt += "Focus: Remind the user of CSRD/CSDDD reporting obligations where relevant.\n"
+    if user.role:
+        prompt += f"User's Role: {user.role}\n"
+        if "marketing" in user.role.lower():
+            prompt += "Tone: Provide recommendations oriented towards marketing wording and claim substantiation.\n"
+        elif "legal" in user.role.lower() or "compliance" in user.role.lower():
+            prompt += "Tone: Provide detailed legal citations and focus on regulatory compliance.\n"
+
+    return prompt
+
+def analyze_text_with_gpt(text: str, user: User) -> Dict[str, Any]:
     """Analyze text for greenwashing risks, qualitative triggers, and recommendations using GPT."""
     if not text:
         return {
@@ -61,12 +85,14 @@ def analyze_text_with_gpt(text: str) -> Dict[str, Any]:
             "recommendations": [],
         }
 
+    personalized_prompt = _build_personalized_prompt(user)
+
     try:
         client = _get_client()
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "system", "content": personalized_prompt},
                 {"role": "user", "content": f"Analyze the following text for greenwashing risks and subtle triggers:\n\n{text}"}
             ],
             response_format={"type": "json_object"},

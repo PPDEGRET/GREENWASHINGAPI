@@ -20,3 +20,11 @@ python-dotenv==1.0.1
 # Testing
 pytest==8.3.3
 pytest-mock==3.14.0
+pytest-asyncio==0.23.7
+
+# Database & Auth
+sqlalchemy==2.0.30
+aiosqlite==0.20.0
+alembic==1.13.1
+fastapi-users[sqlalchemy]==13.0.0
+passlib[bcrypt]==1.7.4

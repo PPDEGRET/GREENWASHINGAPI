@@ -6,6 +6,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from src.app.routers.analysis import router as analysis_router
+from src.app.routers.auth import router as auth_router
+from src.app.routers.usage import router as usage_router
+from src.app.routers.onboarding import router as onboarding_router
 
 app = FastAPI(title="GreenCheck API", version="2.0.0")
 
@@ -24,8 +27,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include the analysis router
+# Include routers
 app.include_router(analysis_router, prefix="/api/v1")
+app.include_router(auth_router, prefix="/api/v1")
+app.include_router(usage_router, prefix="/api/v1")
+app.include_router(onboarding_router, prefix="/api/v1")
 
 @app.get("/health")
 def health_check():

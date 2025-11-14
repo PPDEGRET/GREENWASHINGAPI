@@ -19,13 +19,15 @@ def _deduplicate_recommendations(recommendations: List[RecommendationItem]) -> L
         deduped.append(rec)
     return deduped
 
-def analyze_image(image_bytes: bytes) -> AnalysisResponse:
+from src.app.models.user import User
+
+def analyze_image(image_bytes: bytes, user: User) -> AnalysisResponse:
     """Orchestrate OCR, GPT analysis, rule-based analysis, and recommendation generation."""
     # 1. Extract text from the image
     extracted_text = extract_text_from_image(image_bytes)
 
     # 2. Get GPT analysis (score, reasons, subtle triggers, and GPT recommendations)
-    gpt_analysis = analyze_text_with_gpt(extracted_text)
+    gpt_analysis = analyze_text_with_gpt(extracted_text, user)
 
     # 3. Detect deterministic triggers from the text
     rule_based_triggers = recommendation_engine.detect_rule_based_triggers(extracted_text)
