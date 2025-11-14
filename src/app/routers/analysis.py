@@ -23,8 +23,14 @@ async def analyze_image_endpoint(
 
     ip_address = request.client.host
     if not await usage_service.can_perform_analysis(user=user, ip_address=ip_address):
+        summary = await usage_service.get_usage_summary(user=user, ip_address=ip_address)
         raise HTTPException(
-            status_code=429, detail="Usage limit exceeded. Please upgrade to premium or log in."
+            status_code=429,
+            detail={
+                "code": "USAGE_LIMIT_EXCEEDED",
+                "message": "Usage limit exceeded. Please upgrade to premium or log in.",
+                **summary,
+            },
         )
 
     if not file.content_type.startswith("image/"):

@@ -13,3 +13,10 @@ class UsageLogRead(BaseModel):
 
     class Config:
         orm_mode = True
+
+
+class UsageSummary(BaseModel):
+    used_today: int
+    remaining_today: int
+    limit: int
+    is_premium: bool

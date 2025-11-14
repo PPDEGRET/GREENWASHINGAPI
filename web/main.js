@@ -30,6 +30,7 @@ document.addEventListener("DOMContentLoaded", () => {
         improvementsList: document.getElementById("improvements-list"),
         downloadPdfBtn: document.getElementById("download-pdf-btn"),
         reanalyzeBtn: document.getElementById("reanalyze-btn"),
+        usageBanner: document.getElementById("usage-banner"),
     };
 
     // -----------------------------
@@ -54,18 +55,34 @@ document.addEventListener("DOMContentLoaded", () => {
             ...options,
         });
 
+        const contentType = response.headers.get("content-type") || "";
+
         if (!response.ok) {
+            let errorBody = null;
+            try {
+                if (contentType.includes("application/json")) {
+                    errorBody = await response.json();
+                } else {
+                    errorBody = await response.text();
+                }
+            } catch (e) {
+                errorBody = null;
+            }
+
             if (response.status === 401) {
                 // Unauthorized: clear user and refresh nav
                 state.user = null;
                 renderNav();
             }
-            const text = await response.text();
-            throw new Error(`API request failed (${response.status}): ${text}`);
+
+            const error = new Error(`API request failed (${response.status})`);
+            error.status = response.status;
+            error.body = errorBody;
+            throw error;
         }
 
         if (response.status === 204) return; // No content
-        const contentType = response.headers.get("content-type") || "";
+
         if (contentType.includes("application/json")) {
             return response.json();
         }
@@ -311,6 +328,39 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     };
 
+    const updateUsageBanner = (summary) => {
+        if (!ui.usageBanner || !summary) return;
+
+        const detail = summary.detail || summary; // Support FastAPI error shape {detail: {...}}
+        const used = typeof detail.used_today === "number" ? detail.used_today : null;
+        const remaining = typeof detail.remaining_today === "number" ? detail.remaining_today : null;
+        const limit = typeof detail.limit === "number" ? detail.limit : null;
+        const isPremium = Boolean(detail.is_premium);
+
+        if (isPremium) {
+            ui.usageBanner.textContent = "You have unlimited analyses with your premium account.";
+            ui.usageBanner.hidden = false;
+            return;
+        }
+
+        if (limit != null && remaining != null) {
+            const usedDisplay = used != null ? used : limit - remaining;
+            ui.usageBanner.textContent = `Free analyses today: ${Math.max(0, remaining)} / ${limit} (used ${Math.max(0, usedDisplay)}).`;
+            ui.usageBanner.hidden = false;
+        } else {
+            ui.usageBanner.hidden = true;
+        }
+    };
+
+    const fetchUsageSummary = async () => {
+        try {
+            const summary = await apiFetch("/usage/summary");
+            updateUsageBanner(summary);
+        } catch (error) {
+            console.warn("Could not fetch usage summary", error);
+        }
+    };
+
     const handleFileUpload = async (file) => {
         if (!file) return;
         state.file = file;
@@ -327,11 +377,31 @@ document.addEventListener("DOMContentLoaded", () => {
             });
 
             renderResults(data);
+            await fetchUsageSummary();
             switchAppState("results");
         } catch (error) {
             console.error("Error during analysis:", error);
             switchAppState("landing");
-            alert("Analysis failed. Please try again.");
+
+            // Handle daily limit exceeded with a friendly message and updated banner
+            if (error.status === 429 && error.body) {
+                const detail = error.body.detail || error.body;
+                updateUsageBanner(detail);
+
+                const limit = detail.limit;
+                const remaining = detail.remaining_today;
+                let message = "Daily analysis limit reached.";
+                if (typeof limit === "number" && typeof remaining === "number") {
+                    if (remaining <= 0) {
+                        message = `You reached your daily limit of ${limit} free analyses. Please come back tomorrow or upgrade to premium.`;
+                    } else {
+                        message = `You have ${remaining} analysis${remaining === 1 ? "" : "es"} left today (limit: ${limit}).`;
+                    }
+                }
+                alert(message);
+            } else {
+                alert("Analysis failed. Please try again.");
+            }
         }
     };
 
@@ -401,6 +471,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // -----------------------------
     const init = async () => {
         await fetchCurrentUser();
+        await fetchUsageSummary();
         setupUpload();
         setupResultsActions();
         switchAppState("landing");

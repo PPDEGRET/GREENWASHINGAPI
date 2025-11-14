@@ -6,7 +6,10 @@ from src.app.db.database import async_session_maker
 from src.app.models.user import User
 from src.app.models.usage import UsageLog
 
+# Daily free analysis limit for non-premium users (per user/IP).
+# Local development (127.0.0.1) is exempt from this limit so you can test freely.
 NON_PREMIUM_LIMIT = 3
+
 
 async def log_analysis(
     input_type: str,
@@ -27,10 +30,8 @@ async def log_analysis(
         session.add(usage_log)
         await session.commit()
 
-async def can_perform_analysis(user: Optional[User] = None, ip_address: Optional[str] = None) -> bool:
-    if user and user.is_premium:
-        return True
-
+async def _get_daily_usage_count(user: Optional[User] = None, ip_address: Optional[str] = None) -> int:
+    """Return how many analyses have been performed today by this user/IP."""
     async with async_session_maker() as session:
         today = datetime.utcnow().date()
         start_of_day = datetime.combine(today, datetime.min.time())
@@ -42,11 +43,39 @@ async def can_perform_analysis(user: Optional[User] = None, ip_address: Optional
         elif ip_address:
             query = query.where(UsageLog.ip_address == ip_address)
         else:
-            return False # Should not happen
+            # If we somehow don't have user or IP, treat as zero for display purposes.
+            return 0
 
         result = await session.execute(query)
-        count = result.scalar_one_or_none() or 0
-        return count < NON_PREMIUM_LIMIT
+        return result.scalar_one_or_none() or 0
+
+
+async def can_perform_analysis(user: Optional[User] = None, ip_address: Optional[str] = None) -> bool:
+    # Premium users have no limit
+    if user and user.is_premium:
+        return True
+
+    # Allow unlimited usage from localhost during development so you don't get blocked
+    # while testing the app locally.
+    if ip_address in {"127.0.0.1", "localhost"}:
+        return True
+
+    count = await _get_daily_usage_count(user=user, ip_address=ip_address)
+    return count < NON_PREMIUM_LIMIT
+
+
+async def get_usage_summary(user: Optional[User] = None, ip_address: Optional[str] = None) -> dict:
+    """Return a simple summary of today's usage for display in the UI."""
+    is_premium = bool(user and user.is_premium)
+    count = await _get_daily_usage_count(user=user, ip_address=ip_address)
+
+    return {
+        "used_today": int(count),
+        "remaining_today": max(0, NON_PREMIUM_LIMIT - int(count)),
+        "limit": NON_PREMIUM_LIMIT,
+        "is_premium": is_premium,
+    }
+
 
 async def get_usage_history(user: User):
     async with async_session_maker() as session:
