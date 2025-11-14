@@ -35,12 +35,14 @@ You MUST return a JSON object with the following schema:
   "risk_score": "integer (0-100)",
   "level": "'Low' or 'Medium' or 'High'",
   "reasons": "[string, ...]",
-  "subtle_triggers": "[string, ...]"
+  "subtle_triggers": "[string, ...]",
+  "recommendations": "[string, ...]"
 }
 
 Where:
 - "reasons" are the main justifications for the score.
 - "subtle_triggers" is a list of trigger keywords identified from the qualitative analysis (e.g., "omission", "jargon", "misleading_comparison").
+- "recommendations" is a short list of concrete, user-facing suggestions to improve the claims (1–5 bullet points, concise).
 
 Scoring guide:
 - 0-30 (Low): Claims are specific, verifiable, and contextually clear.
@@ -49,11 +51,15 @@ Scoring guide:
 """
 
 def analyze_text_with_gpt(text: str) -> Dict[str, Any]:
-    """
-    Analyzes text for greenwashing risks and subtle qualitative triggers using GPT.
-    """
+    """Analyze text for greenwashing risks, qualitative triggers, and recommendations using GPT."""
     if not text:
-        return {"risk_score": 0, "level": "Low", "reasons": ["No text provided for analysis."], "subtle_triggers": []}
+        return {
+            "risk_score": 0,
+            "level": "Low",
+            "reasons": ["No text provided for analysis."],
+            "subtle_triggers": [],
+            "recommendations": [],
+        }
 
     try:
         client = _get_client()
@@ -74,6 +80,7 @@ def analyze_text_with_gpt(text: str) -> Dict[str, Any]:
         result["level"] = result.get("level", "Low")
         result["reasons"] = result.get("reasons", [])
         result["subtle_triggers"] = result.get("subtle_triggers", [])
+        result["recommendations"] = result.get("recommendations", [])
 
         return result
 
@@ -86,4 +93,6 @@ def analyze_text_with_gpt(text: str) -> Dict[str, Any]:
             "reasons": [
                 "AI analysis skipped due to configuration error. Ensure OPENAI_API_KEY is set.",
             ],
+            "subtle_triggers": [],
+            "recommendations": [],
         }
