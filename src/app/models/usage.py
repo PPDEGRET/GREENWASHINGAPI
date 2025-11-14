@@ -8,7 +8,8 @@ class UsageLog(Base):
     __tablename__ = "usage_logs"
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
-    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=True)
+    ip_address: Mapped[str] = mapped_column(String(50), nullable=True)
     timestamp: Mapped[datetime] = mapped_column(DateTime, default=func.now(), nullable=False)
     # analysis_id is not needed as the id of this table serves the same purpose
     input_type: Mapped[str] = mapped_column(String(50), nullable=False) # "image", "text", "url"

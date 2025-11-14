@@ -11,17 +11,18 @@ The application is divided into two main components:
 
 ## User System & Premium Features
 
-GreenCheck now includes a full user system with support for premium features.
+GreenCheck features an **optional** user system. The core analysis tool is available to everyone, while creating an account unlocks additional features.
 
-### User Accounts
+### Anonymous Access
 
--   **Registration & Login:** Users can create an account and log in to access the application.
--   **Onboarding:** New users are guided through a brief onboarding process to personalize their experience.
--   **Analysis History:** All analyses are saved to the user's account and can be viewed in the "History" section.
+-   **No Account Required:** The main analysis tool can be used without creating an account.
+-   **Usage Limits:** Anonymous usage is limited to **3 analyses per day**, tracked by IP address.
 
-### Premium vs. Non-Premium
+### Authenticated Users
 
--   **Non-Premium:** Standard users have a limit of **3 analyses per day**.
+-   **Registration & Login:** Users can create an account to get a personalized experience and access more features.
+-   **Onboarding:** New users are guided through a brief onboarding process to tailor the analysis to their needs.
+-   **Analysis History:** All analyses are saved to the user's account.
 -   **Premium:** Premium users have access to unlimited analyses and other advanced features.
 
 To make a user a premium member, you can manually set the `is_premium` flag to `true` for the user in the database.
@@ -57,7 +58,7 @@ SECRET_KEY=a_long_random_secret_string
 
 **3. Run the application:**
 
-I have created a convenient script that starts both the backend and frontend servers for you.
+A convenient script is provided to handle database migrations and start both servers.
 
 **On macOS/Linux:**
 ```bash
@@ -81,4 +82,4 @@ The project includes a suite of tests for the backend. To run the tests, use `py
 pytest
 ```
 
-The tests for the authentication system are located in `tests/test_auth.py`.
+For more details on testing, including manual QA steps, please see `TESTING.md`.

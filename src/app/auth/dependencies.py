@@ -1,11 +1,11 @@
-from fastapi import Depends, HTTPException, status
+from typing import Optional
+from fastapi import Depends, Request
 from src.app.models.user import User
-from src.app.routers.auth import current_user
+from src.app.routers.auth import fastapi_users
 
-async def get_premium_user(user: User = Depends(current_user)) -> User:
-    if not user.is_premium:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="This feature is only available to premium users.",
-        )
-    return user
+async def get_optional_current_user(request: Request) -> Optional[User]:
+    try:
+        user = await fastapi_users.authenticator.try_read_user(request)
+        return user
+    except Exception:
+        return None

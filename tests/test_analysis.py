@@ -28,7 +28,9 @@ def test_analyze_image_endpoint_success(client):
         recommendations=[mock_recommendation]
     )
 
-    with patch('src.app.routers.analysis.analyze_image', return_value=mock_analysis_result.dict()) as mock_analyze:
+    with patch('src.app.routers.analysis.analyze_image', return_value=mock_analysis_result) as mock_analyze, \
+         patch('src.app.services.usage_service.can_perform_analysis', return_value=True) as mock_can_perform, \
+         patch('src.app.services.usage_service.log_analysis') as mock_log:
         # Use a dummy file for the upload
         dummy_file = ("test.png", b"fake-image-bytes", "image/png")
 

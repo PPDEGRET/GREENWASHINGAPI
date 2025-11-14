@@ -1,6 +1,10 @@
 #!/bin/bash
 # This script starts both the backend and frontend servers for local development.
 
+# Apply database migrations
+echo "Running database migrations..."
+alembic upgrade head
+
 # Start the backend server in the background
 echo "Starting backend server..."
 ./run_api.sh &

@@ -1,167 +1,119 @@
 document.addEventListener("DOMContentLoaded", () => {
     const API_BASE_URL = "http://localhost:8000/api/v1";
     let state = {
-        file: null,
         user: null,
     };
 
     const ui = {
+        mainNav: document.getElementById("main-nav"),
         views: {
-            landing: document.getElementById("view-landing"),
+            app: document.getElementById("view-app"),
             login: document.getElementById("view-login"),
             register: document.getElementById("view-register"),
             onboarding: document.getElementById("view-onboarding"),
-            app: document.getElementById("view-app"),
             history: document.getElementById("view-history"),
             account: document.getElementById("view-account"),
         },
-        mainNav: document.getElementById("main-nav"),
-        showLoginBtn: document.getElementById("show-login-btn"),
-        showRegisterBtn: document.getElementById("show-register-btn"),
-        showLoginLink: document.getElementById("show-login-link"),
-        showRegisterLink: document.getElementById("show-register-link"),
-        loginForm: document.getElementById("login-form"),
-        registerForm: document.getElementById("register-form"),
-        onboardingForm: document.getElementById("onboarding-form"),
-        logoutBtn: document.getElementById("logout-btn"),
-        dropzone: document.getElementById("dropzone"),
-        fileInput: document.getElementById("file-input"),
-        historyList: document.getElementById("history-list"),
-        accountDetails: document.getElementById("account-details"),
     };
 
-    const switchView = (viewName) => {
-        Object.values(ui.views).forEach(view => view.hidden = true);
-        ui.views[viewName].hidden = false;
-    };
-
-    const apiFetch = async (endpoint, options = {}) => {
-        const response = await fetch(`${API_BASE_URL}${endpoint}`, {credentials: 'include', ...options});
-        if (!response.ok) {
-            if (response.status === 401) logout();
-            throw new Error(`API request failed: ${response.statusText}`);
-        }
-        if (response.status === 204) return; // No Content
-        return response.json();
-    };
-
-    const login = async (email, password) => {
-        const formData = new URLSearchParams();
-        formData.append("username", email);
-        formData.append("password", password);
-        await apiFetch("/auth/jwt/login", {
-            method: "POST",
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: formData,
-        });
-        await fetchCurrentUser();
-        router();
-    };
-
-    const register = async (email, password) => {
-        await apiFetch("/auth/register", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, password }),
-        });
-        await login(email, password);
-    };
-
-    const logout = async () => {
-        try {
-            await apiFetch("/auth/jwt/logout", { method: "POST" });
-        } catch (error) {
-            console.error("Logout failed, clearing client-side state anyway.", error);
-        } finally {
-            state.user = null;
-            ui.mainNav.hidden = true;
-            router();
-        }
-    };
-
-    const fetchCurrentUser = async () => {
-        console.log("Before fetchCurrentUser:", state.user);
-        try {
-            state.user = await apiFetch("/users/me");
-            ui.mainNav.hidden = false;
-        } catch (error) {
-            state.user = null;
-        }
-        console.log("After fetchCurrentUser:", state.user);
-    };
-
-    const completeOnboarding = async (onboardingData) => {
-        console.log("Before completeOnboarding:", state.user);
-        await apiFetch("/me/onboarding", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(onboardingData),
-        });
-        await fetchCurrentUser();
-        console.log("After completeOnboarding:", state.user);
-        router();
-    };
-
-    const router = () => {
-        const hash = window.location.hash;
-        console.log("Routing with hash:", hash, "and user:", state.user);
-
-        if (!state.user) {
-            if (hash === "#register") switchView("register");
-            else if (hash === "#login") switchView("login");
-            else switchView("landing");
-            return;
-        }
-
-        if (state.user && !state.user.company_name) {
-            switchView("onboarding");
-            return;
-        }
-
-        if (hash === "#history") {
-            // renderHistory(); // Implement this
-            switchView("history");
-        } else if (hash === "#account") {
-            // renderAccount(); // Implement this
-            switchView("account");
+    const renderNav = () => {
+        if (state.user) {
+            ui.mainNav.innerHTML = `
+                <a href="#history" class="nav-link">History</a>
+                <a href="#account" class="nav-link">Account</a>
+                <button id="logout-btn" class="btn-secondary">Logout</button>
+            `;
+            document.getElementById("logout-btn").onclick = logout;
         } else {
-            switchView("app");
+            ui.mainNav.innerHTML = `
+                <button id="show-login-btn" class="btn-primary">Login / Register</button>
+            `;
+            document.getElementById("show-login-btn").onclick = () => showModal("login");
         }
     };
 
-    const setupEventListeners = () => {
-        ui.showLoginBtn.onclick = () => window.location.hash = "login";
-        ui.showRegisterBtn.onclick = () => window.location.hash = "register";
-        ui.showLoginLink.onclick = () => window.location.hash = "login";
-        ui.showRegisterLink.onclick = () => window.location.hash = "register";
+    const showModal = (viewName) => {
+        const view = ui.views[viewName];
+        view.hidden = false;
+        view.innerHTML = getModalContent(viewName);
 
-        ui.loginForm.onsubmit = async (e) => {
-            e.preventDefault();
-            await login(e.target.elements["login-email"].value, e.target.elements["login-password"].value);
-        };
-        ui.registerForm.onsubmit = async (e) => {
-            e.preventDefault();
-            await register(e.target.elements["register-email"].value, e.target.elements["register-password"].value);
-        };
-        ui.onboardingForm.onsubmit = async (e) => {
-            e.preventDefault();
-            const data = {
-                company_name: e.target.elements["onboarding-company-name"].value,
-                sector: e.target.elements["onboarding-sector"].value,
-                company_size: e.target.elements["onboarding-company-size"].value,
-                country: e.target.elements["onboarding-country"].value,
-                role: e.target.elements["onboarding-role"].value,
+        if (viewName === 'login') {
+            document.getElementById("login-form").onsubmit = async (e) => {
+                e.preventDefault();
+                await login(e.target.elements["login-email"].value, e.target.elements["login-password"].value);
+                view.hidden = true;
             };
-            await completeOnboarding(data);
-        };
-        ui.logoutBtn.onclick = logout;
-        window.onhashchange = router;
+        } else if (viewName === 'register') {
+            document.getElementById("register-form").onsubmit = async (e) => {
+                e.preventDefault();
+                await register(e.target.elements["register-email"].value, e.target.elements["register-password"].value);
+                view.hidden = true;
+            };
+        } else if (viewName === 'onboarding') {
+            document.getElementById("onboarding-form").onsubmit = async (e) => {
+                e.preventDefault();
+                const data = {
+                    company_name: e.target.elements["onboarding-company-name"].value,
+                    sector: e.target.elements["onboarding-sector"].value,
+                    company_size: e.target.elements["onboarding-company-size"].value,
+                    country: e.target.elements["onboarding-country"].value,
+                    role: e.target.elements["onboarding-role"].value,
+                };
+                await completeOnboarding(data);
+                view.hidden = true;
+            };
+        }
     };
+
+    const getModalContent = (viewName) => {
+        if (viewName === 'login') {
+            return `
+                <div class="modal-content">
+                    <h2>Login</h2>
+                    <form id="login-form">
+                        <input type="email" id="login-email" placeholder="Email" required />
+                        <input type="password" id="login-password" placeholder="Password" required />
+                        <button type="submit" class="btn-primary">Login</button>
+                        <p>Don't have an account? <a href="#" id="show-register-link">Register here</a></p>
+                    </form>
+                </div>
+            `;
+        }
+        if (viewName === 'register') {
+            return `
+                <div class="modal-content">
+                    <h2>Register</h2>
+                    <form id="register-form">
+                        <input type="email" id="register-email" placeholder="Email" required />
+                        <input type="password" id="register-password" placeholder="Password" required />
+                        <button type="submit" class="btn-primary">Register</button>
+                        <p>Already have an account? <a href="#" id="show-login-link">Login here</a></p>
+                    </form>
+                </div>
+            `;
+        }
+        if (viewName === 'onboarding') {
+            return `
+                <div class="modal-content">
+                    <h2>Welcome!</h2>
+                    <p>Please complete your profile to continue.</p>
+                    <form id="onboarding-form">
+                        <input type="text" id="onboarding-company-name" placeholder="Company Name" />
+                        <input type="text" id="onboarding-sector" placeholder="Sector" />
+                        <input type="text" id="onboarding-company-size" placeholder="Company Size" />
+                        <input type="text" id="onboarding-country" placeholder="Country" />
+                        <input type="text" id="onboarding-role" placeholder="Role" />
+                        <button type="submit" class="btn-primary">Save</button>
+                    </form>
+                </div>
+            `;
+        }
+        return '';
+    }
 
     const init = async () => {
-        await fetchCurrentUser();
-        setupEventListeners();
-        router();
+        // await fetchCurrentUser();
+        renderNav();
     };
 
     init();

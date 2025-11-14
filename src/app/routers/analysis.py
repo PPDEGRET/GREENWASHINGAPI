@@ -1,8 +1,8 @@
-from fastapi import APIRouter, File, UploadFile, HTTPException, Depends
+from fastapi import APIRouter, File, UploadFile, HTTPException, Depends, Request
 from fastapi.responses import StreamingResponse
 from src.app.schemas.analysis import AnalysisResponse
 from src.app.models.user import User
-from src.app.routers.auth import current_user
+from src.app.auth.dependencies import get_optional_current_user
 from src.app.services import usage_service
 import time
 from src.app.services.analysis_service import analyze_image
@@ -14,14 +14,17 @@ router = APIRouter()
 
 @router.post("/analyze", response_model=AnalysisResponse)
 async def analyze_image_endpoint(
-    file: UploadFile = File(...), user: User = Depends(current_user)
+    request: Request,
+    file: UploadFile = File(...),
+    user: User = Depends(get_optional_current_user),
 ) -> AnalysisResponse:
     """Accept an image file, perform analysis, and return the results."""
     start_time = time.time()
 
-    if not await usage_service.can_user_perform_analysis(user):
+    ip_address = request.client.host
+    if not await usage_service.can_perform_analysis(user=user, ip_address=ip_address):
         raise HTTPException(
-            status_code=429, detail="Usage limit exceeded. Please upgrade to premium."
+            status_code=429, detail="Usage limit exceeded. Please upgrade to premium or log in."
         )
 
     if not file.content_type.startswith("image/"):
@@ -31,14 +34,15 @@ async def analyze_image_endpoint(
     if not image_bytes:
         raise HTTPException(status_code=400, detail="Uploaded file is empty.")
 
-    analysis_results = analyze_image(image_bytes, user)
+    analysis_results = analyze_image(image_bytes, user) if user else analyze_image(image_bytes)
 
     duration_ms = int((time.time() - start_time) * 1000)
     await usage_service.log_analysis(
-        user=user,
         input_type="image",
         result_json=analysis_results.model_dump(),
         duration_ms=duration_ms,
+        user=user,
+        ip_address=ip_address,
     )
 
     return analysis_results
