@@ -1,9 +1,10 @@
-from typing import List, Set
+from typing import List, Set, Optional
 
 from src.app.services.ocr_service import extract_text_from_image
 from src.app.services.gpt_service import analyze_text_with_gpt
 from src.app.services.recommendation_engine import RecommendationEngine
 from src.app.schemas.analysis import AnalysisResponse, RecommendationItem
+from src.app.models.user import User
 
 # Instantiate the engine once to be reused in all analyses
 recommendation_engine = RecommendationEngine()
@@ -19,10 +20,12 @@ def _deduplicate_recommendations(recommendations: List[RecommendationItem]) -> L
         deduped.append(rec)
     return deduped
 
-from src.app.models.user import User
+def analyze_image(image_bytes: bytes, user: Optional[User] = None) -> AnalysisResponse:
+    """Orchestrate OCR, GPT analysis, rule-based analysis, and recommendation generation.
 
-def analyze_image(image_bytes: bytes, user: User) -> AnalysisResponse:
-    """Orchestrate OCR, GPT analysis, rule-based analysis, and recommendation generation."""
+    `user` is optional to support anonymous analysis; when absent, GPT uses a generic
+    system prompt without personalization.
+    """
     # 1. Extract text from the image
     extracted_text = extract_text_from_image(image_bytes)
 

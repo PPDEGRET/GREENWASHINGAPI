@@ -34,7 +34,7 @@ async def analyze_image_endpoint(
     if not image_bytes:
         raise HTTPException(status_code=400, detail="Uploaded file is empty.")
 
-    analysis_results = analyze_image(image_bytes, user) if user else analyze_image(image_bytes)
+    analysis_results = analyze_image(image_bytes, user)
 
     duration_ms = int((time.time() - start_time) * 1000)
     await usage_service.log_analysis(

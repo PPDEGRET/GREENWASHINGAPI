@@ -23,7 +23,9 @@ pytest-mock==3.14.0
 pytest-asyncio==0.23.7
 
 # Database & Auth
-sqlalchemy==2.0.30
+# Use a SQLAlchemy 2.0.x version compatible with Python 3.13.
+# 2.0.30 can raise "Can't replace canonical symbol for '__firstlineno__'" on 3.13.
+sqlalchemy>=2.0.36,<3.0.0
 aiosqlite==0.20.0
 alembic==1.13.1
 fastapi-users[sqlalchemy]==13.0.0

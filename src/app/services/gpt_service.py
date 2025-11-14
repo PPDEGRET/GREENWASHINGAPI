@@ -1,6 +1,6 @@
 import os
 import json
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 from openai import OpenAI
 from dotenv import load_dotenv
@@ -52,9 +52,15 @@ Scoring guide:
 
 from src.app.models.user import User
 
-def _build_personalized_prompt(user: User) -> str:
-    """Build a personalized system prompt based on user data."""
+def _build_personalized_prompt(user: Optional[User]) -> str:
+    """Build a personalized system prompt based on user data.
+
+    If `user` is None, this falls back to the generic SYSTEM_PROMPT.
+    """
     prompt = SYSTEM_PROMPT
+
+    if user is None:
+        return prompt
 
     prompt += "\n\n--- User Profile for Personalization ---\n"
     if user.sector:
@@ -74,8 +80,12 @@ def _build_personalized_prompt(user: User) -> str:
 
     return prompt
 
-def analyze_text_with_gpt(text: str, user: User) -> Dict[str, Any]:
-    """Analyze text for greenwashing risks, qualitative triggers, and recommendations using GPT."""
+def analyze_text_with_gpt(text: str, user: Optional[User] = None) -> Dict[str, Any]:
+    """Analyze text for greenwashing risks, triggers, and recommendations.
+
+    When `user` is provided, the system prompt is personalized using the user's
+    profile; otherwise, a generic system prompt is used.
+    """
     if not text:
         return {
             "risk_score": 0,

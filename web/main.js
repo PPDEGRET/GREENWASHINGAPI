@@ -1,6 +1,8 @@
 document.addEventListener("DOMContentLoaded", () => {
     const API_BASE_URL = "http://localhost:8000/api/v1";
+
     let state = {
+        file: null,
         user: null,
     };
 
@@ -14,8 +16,121 @@ document.addEventListener("DOMContentLoaded", () => {
             history: document.getElementById("view-history"),
             account: document.getElementById("view-account"),
         },
+        appStates: {
+            landing: document.getElementById("app-state-landing"),
+            progress: document.getElementById("app-state-progress"),
+            results: document.getElementById("app-state-results"),
+        },
+        dropzone: document.getElementById("dropzone"),
+        fileInput: document.getElementById("file-input"),
+        progressSteps: document.querySelectorAll(".progress-steps .step"),
+        scoreDonut: document.getElementById("score-donut"),
+        riskLevel: document.getElementById("risk-level"),
+        triggersList: document.getElementById("triggers-list"),
+        improvementsList: document.getElementById("improvements-list"),
+        downloadPdfBtn: document.getElementById("download-pdf-btn"),
+        reanalyzeBtn: document.getElementById("reanalyze-btn"),
     };
 
+    // -----------------------------
+    // Helper: switch app sub-state
+    // -----------------------------
+    const switchAppState = (stateName) => {
+        Object.values(ui.appStates).forEach((el) => {
+            if (!el) return;
+            el.hidden = true;
+        });
+        if (ui.appStates[stateName]) {
+            ui.appStates[stateName].hidden = false;
+        }
+    };
+
+    // -----------------------------
+    // Helper: generic API fetch
+    // -----------------------------
+    const apiFetch = async (endpoint, options = {}) => {
+        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+            credentials: "include",
+            ...options,
+        });
+
+        if (!response.ok) {
+            if (response.status === 401) {
+                // Unauthorized: clear user and refresh nav
+                state.user = null;
+                renderNav();
+            }
+            const text = await response.text();
+            throw new Error(`API request failed (${response.status}): ${text}`);
+        }
+
+        if (response.status === 204) return; // No content
+        const contentType = response.headers.get("content-type") || "";
+        if (contentType.includes("application/json")) {
+            return response.json();
+        }
+        return response;
+    };
+
+    // -----------------------------
+    // Auth helpers
+    // -----------------------------
+    const fetchCurrentUser = async () => {
+        try {
+            state.user = await apiFetch("/users/me");
+        } catch (error) {
+            state.user = null;
+        }
+        renderNav();
+    };
+
+    const login = async (email, password) => {
+        const formData = new URLSearchParams();
+        formData.append("username", email);
+        formData.append("password", password);
+
+        await apiFetch("/auth/jwt/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: formData,
+        });
+
+        await fetchCurrentUser();
+    };
+
+    const register = async (email, password) => {
+        await apiFetch("/auth/register", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password }),
+        });
+
+        await login(email, password);
+    };
+
+    const logout = async () => {
+        try {
+            await apiFetch("/auth/jwt/logout", { method: "POST" });
+        } catch (error) {
+            console.error("Logout failed, clearing client-side state anyway.", error);
+        } finally {
+            state.user = null;
+            renderNav();
+        }
+    };
+
+    const completeOnboarding = async (onboardingData) => {
+        await apiFetch("/me/onboarding", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(onboardingData),
+        });
+        await fetchCurrentUser();
+    };
+
+    // -----------------------------
+    // Navigation bar & modals
+    // -----------------------------
     const renderNav = () => {
         if (state.user) {
             ui.mainNav.innerHTML = `
@@ -34,23 +149,50 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const showModal = (viewName) => {
         const view = ui.views[viewName];
+        if (!view) return;
+
         view.hidden = false;
         view.innerHTML = getModalContent(viewName);
 
-        if (viewName === 'login') {
-            document.getElementById("login-form").onsubmit = async (e) => {
+        if (viewName === "login") {
+            const form = document.getElementById("login-form");
+            form.onsubmit = async (e) => {
                 e.preventDefault();
-                await login(e.target.elements["login-email"].value, e.target.elements["login-password"].value);
+                await login(
+                    e.target.elements["login-email"].value,
+                    e.target.elements["login-password"].value,
+                );
                 view.hidden = true;
             };
-        } else if (viewName === 'register') {
-            document.getElementById("register-form").onsubmit = async (e) => {
+            const showRegisterLink = document.getElementById("show-register-link");
+            if (showRegisterLink) {
+                showRegisterLink.onclick = (e) => {
+                    e.preventDefault();
+                    view.hidden = true;
+                    showModal("register");
+                };
+            }
+        } else if (viewName === "register") {
+            const form = document.getElementById("register-form");
+            form.onsubmit = async (e) => {
                 e.preventDefault();
-                await register(e.target.elements["register-email"].value, e.target.elements["register-password"].value);
+                await register(
+                    e.target.elements["register-email"].value,
+                    e.target.elements["register-password"].value,
+                );
                 view.hidden = true;
             };
-        } else if (viewName === 'onboarding') {
-            document.getElementById("onboarding-form").onsubmit = async (e) => {
+            const showLoginLink = document.getElementById("show-login-link");
+            if (showLoginLink) {
+                showLoginLink.onclick = (e) => {
+                    e.preventDefault();
+                    view.hidden = true;
+                    showModal("login");
+                };
+            }
+        } else if (viewName === "onboarding") {
+            const form = document.getElementById("onboarding-form");
+            form.onsubmit = async (e) => {
                 e.preventDefault();
                 const data = {
                     company_name: e.target.elements["onboarding-company-name"].value,
@@ -66,7 +208,7 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     const getModalContent = (viewName) => {
-        if (viewName === 'login') {
+        if (viewName === "login") {
             return `
                 <div class="modal-content">
                     <h2>Login</h2>
@@ -79,7 +221,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 </div>
             `;
         }
-        if (viewName === 'register') {
+        if (viewName === "register") {
             return `
                 <div class="modal-content">
                     <h2>Register</h2>
@@ -92,7 +234,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 </div>
             `;
         }
-        if (viewName === 'onboarding') {
+        if (viewName === "onboarding") {
             return `
                 <div class="modal-content">
                     <h2>Welcome!</h2>
@@ -108,12 +250,160 @@ document.addEventListener("DOMContentLoaded", () => {
                 </div>
             `;
         }
-        return '';
-    }
+        return "";
+    };
 
+    // -----------------------------
+    // Drag & drop + analysis
+    // -----------------------------
+    const runProgressIndicator = () => {
+        if (!ui.progressSteps) return;
+        ui.progressSteps.forEach((step, index) => {
+            step.classList.remove("active");
+            setTimeout(() => step.classList.add("active"), index * 500);
+        });
+    };
+
+    const drawDonut = (score) => {
+        if (!ui.scoreDonut) return;
+        const pct = Math.max(0, Math.min(100, score || 0));
+        const color = score > 70 ? "#f44336" : score > 30 ? "#ff9800" : "#4CAF50";
+        const html = `
+            <svg viewBox="0 0 36 36" class="score-svg">
+                <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                      fill="none" stroke="#e6e6e6" stroke-width="3"></path>
+                <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                      fill="none" stroke="${color}" stroke-width="3"
+                      stroke-dasharray="${pct}, 100"></path>
+                <text x="18" y="22" text-anchor="middle" font-size="12" class="score-text">${pct}</text>
+            </svg>`;
+        ui.scoreDonut.innerHTML = html;
+    };
+
+    const renderResults = (data) => {
+        drawDonut(data.score);
+        if (ui.riskLevel) ui.riskLevel.textContent = data.level;
+        if (ui.triggersList) {
+            ui.triggersList.innerHTML = (data.reasons || [])
+                .map((reason) => `<li>${reason}</li>`)
+                .join("");
+        }
+
+        let recs = [];
+        if (Object.prototype.hasOwnProperty.call(data, "recommendations")) {
+            recs = Array.isArray(data.recommendations) ? data.recommendations : [];
+        } else {
+            recs = [
+                "Clarify the environmental claim with scope and metrics.",
+                "Provide external certifications or third-party verification.",
+                "Avoid absolute expressions such as '100% sustainable'.",
+            ];
+        }
+
+        if (ui.improvementsList) {
+            ui.improvementsList.innerHTML = "";
+            recs.forEach((rec) => {
+                const li = document.createElement("li");
+                const text = rec && typeof rec === "object" ? rec.message || "" : String(rec || "");
+                li.textContent = text;
+                ui.improvementsList.appendChild(li);
+            });
+        }
+    };
+
+    const handleFileUpload = async (file) => {
+        if (!file) return;
+        state.file = file;
+        switchAppState("progress");
+        runProgressIndicator();
+
+        const formData = new FormData();
+        formData.append("file", file);
+
+        try {
+            const data = await apiFetch("/analyze", {
+                method: "POST",
+                body: formData,
+            });
+
+            renderResults(data);
+            switchAppState("results");
+        } catch (error) {
+            console.error("Error during analysis:", error);
+            switchAppState("landing");
+            alert("Analysis failed. Please try again.");
+        }
+    };
+
+    const setupUpload = () => {
+        if (!ui.dropzone || !ui.fileInput) return;
+
+        ui.dropzone.addEventListener("click", () => ui.fileInput.click());
+
+        ui.dropzone.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            ui.dropzone.classList.add("dragover");
+        });
+
+        ui.dropzone.addEventListener("dragleave", () => {
+            ui.dropzone.classList.remove("dragover");
+        });
+
+        ui.dropzone.addEventListener("drop", (e) => {
+            e.preventDefault();
+            ui.dropzone.classList.remove("dragover");
+            if (e.dataTransfer.files.length) {
+                handleFileUpload(e.dataTransfer.files[0]);
+            }
+        });
+
+        ui.fileInput.addEventListener("change", (e) => {
+            if (e.target.files.length) {
+                handleFileUpload(e.target.files[0]);
+            }
+        });
+    };
+
+    const setupResultsActions = () => {
+        if (ui.downloadPdfBtn) {
+            ui.downloadPdfBtn.addEventListener("click", async () => {
+                if (!state.file) return;
+                const formData = new FormData();
+                formData.append("file", state.file);
+                try {
+                    const response = await apiFetch("/report.pdf", {
+                        method: "POST",
+                        body: formData,
+                    });
+                    const blob = await response.blob();
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = "GreenCheck_Report.pdf";
+                    a.click();
+                    URL.revokeObjectURL(url);
+                } catch (error) {
+                    console.error("Error downloading PDF:", error);
+                }
+            });
+        }
+
+        if (ui.reanalyzeBtn) {
+            ui.reanalyzeBtn.addEventListener("click", () => {
+                state.file = null;
+                switchAppState("landing");
+            });
+        }
+    };
+
+    // -----------------------------
+    // Init
+    // -----------------------------
     const init = async () => {
-        // await fetchCurrentUser();
-        renderNav();
+        await fetchCurrentUser();
+        setupUpload();
+        setupResultsActions();
+        switchAppState("landing");
     };
 
     init();

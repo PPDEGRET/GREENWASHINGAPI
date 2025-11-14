@@ -28,6 +28,7 @@
     <main>
         <!-- Main App View (Analysis) -->
         <div id="view-app" class="view">
+            <!-- Landing state: upload CTA and steps overview -->
             <div id="app-state-landing" class="app-state">
                 <section class="hero">
                     <div class="container">
@@ -44,12 +45,93 @@
                         </div>
                     </div>
                 </section>
+                <section class="steps-overview">
+                    <div class="container">
+                        <div class="step-item">
+                            <div class="step-icon">1</div>
+                            <h3>Upload Your Ad</h3>
+                            <p>Drag and drop your ad creative into the designated area.</p>
+                        </div>
+                        <div class="step-item">
+                            <div class="step-icon">2</div>
+                            <h3>AI Analysis</h3>
+                            <p>Our AI analyzes the content for potential greenwashing.</p>
+                        </div>
+                        <div class="step-item">
+                            <div class="step-icon">3</div>
+                            <h3>Get Your Report</h3>
+                            <p>Receive a detailed report with actionable insights.</p>
+                        </div>
+                    </div>
+                </section>
             </div>
+
+            <!-- Progress state: spinner + steps -->
             <div id="app-state-progress" class="app-state" hidden>
-                <!-- Progress indicator content -->
+                <div class="container">
+                    <div class="progress-card">
+                        <div class="spinner"></div>
+                        <h2>Analyzing your creative...</h2>
+                        <p>Our AI is reviewing your ad. This may take a moment.</p>
+                        <div class="progress-steps">
+                            <div class="step" data-step="ocr">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Extracting Text</span>
+                            </div>
+                            <div class="step" data-step="detect">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Analyzing Claims</span>
+                            </div>
+                            <div class="step" data-step="score">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Calculating Risk Score</span>
+                            </div>
+                            <div class="step" data-step="report">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Generating Report</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
+
+            <!-- Results state: score, reasons, recommendations, actions -->
             <div id="app-state-results" class="app-state" hidden>
-                <!-- Results content -->
+                <div class="container">
+                    <div class="results-header">
+                        <h2>Analysis Complete</h2>
+                        <p>Below is the risk analysis for your ad creative.</p>
+                    </div>
+                    <div class="results-card">
+                        <div class="results-score">
+                            <div class="score-donut" id="score-donut"></div>
+                            <div class="score-summary">
+                                <h3 id="risk-level"></h3>
+                                <p>This ad has a high likelihood of being perceived as greenwashing.</p>
+                            </div>
+                        </div>
+                        <div class="results-details">
+                            <div class="triggers">
+                                <h3>Identified Risk Factors</h3>
+                                <ul id="triggers-list"></ul>
+                            </div>
+                            <div class="improvements">
+                                <h3>Recommendations</h3>
+                                <ul id="improvements-list"></ul>
+                            </div>
+                        </div>
+                        <div class="results-actions">
+                            <button id="download-pdf-btn" class="btn-primary">
+                                <i class="fas fa-file-pdf"></i>
+                                Download PDF Report
+                            </button>
+                            <button id="reanalyze-btn" class="btn-secondary">
+                                <i class="fas fa-redo"></i>
+                                Analyze Another Ad
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
